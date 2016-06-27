@@ -26,7 +26,9 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 import org.mockito.Matchers;
 import org.mockito.Mock;
@@ -54,8 +56,13 @@ public class PaxosProposerTest {
     private PaxosAcceptor acceptingAcceptor;
     @Mock
     private PaxosAcceptor rejectingAcceptor;
+    @Mock
+    private PaxosAcceptor promiseThenRejectAcceptor;
 
     private ExecutorService executor = Executors.newSingleThreadExecutor();
+
+    @Rule
+    public ExpectedException exception = ExpectedException.none();
 
     PaxosProposer proposer;
 
@@ -66,6 +73,9 @@ public class PaxosProposerTest {
 
         when(rejectingAcceptor.prepare(Matchers.anyLong(), any(PaxosProposalId.class))).thenReturn(failedPromise());
         when(rejectingAcceptor.accept(Matchers.anyLong(), any(PaxosProposal.class))).thenReturn(FAILED_ACCEPTANCE);
+
+        when(promiseThenRejectAcceptor.prepare(Matchers.anyLong(), any(PaxosProposalId.class))).thenReturn(successfulPromise());
+        when(promiseThenRejectAcceptor.accept(Matchers.anyLong(), any(PaxosProposal.class))).thenReturn(FAILED_ACCEPTANCE);
     }
 
     @Test public void
@@ -80,6 +90,32 @@ public class PaxosProposerTest {
         proposer = PaxosProposerImpl.newProposer(learner, ImmutableList.of(acceptingAcceptor, acceptingAcceptor, rejectingAcceptor), NO_LEARNERS, 2, executor);
 
         assertThat(proposer.propose(KEY, VALUE), is(VALUE));
+    }
+
+    @Test public void
+    should_reject_a_proposal_if_there_are_3_acceptors_1_accept_and_2_rejects() throws PaxosRoundFailureException {
+        exception.expect(PaxosRoundFailureException.class);
+
+        proposer = PaxosProposerImpl.newProposer(learner, ImmutableList.of(acceptingAcceptor, rejectingAcceptor, rejectingAcceptor), NO_LEARNERS, 2, executor);
+
+        proposer.propose(KEY, VALUE);
+    }
+
+    @Test public void
+    should_reject_a_proposal_if_there_are_3_acceptors_1_accepts_and_2_promises_then_rejects() throws PaxosRoundFailureException {
+        exception.expect(PaxosRoundFailureException.class);
+
+        proposer = PaxosProposerImpl.newProposer(learner, ImmutableList.of(acceptingAcceptor, promiseThenRejectAcceptor, rejectingAcceptor), NO_LEARNERS, 2, executor);
+
+        proposer.propose(KEY, VALUE);
+    }
+
+    @Test public void
+    should_reject_a_quorum_size_which_is_less_than_a_majority() {
+        exception.expect(IllegalStateException.class);
+
+        int quorumSize = 1;
+        proposer = PaxosProposerImpl.newProposer(learner, ImmutableList.of(acceptingAcceptor, rejectingAcceptor, rejectingAcceptor), NO_LEARNERS, quorumSize, executor);
     }
 
     private PaxosPromise failedPromise() {
