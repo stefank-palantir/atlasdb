@@ -39,8 +39,10 @@ public class PaxosProposerTest {
     private static final PaxosProposalId PROPOSAL_ID = new PaxosProposalId(1, UUID.randomUUID().toString());
     private static final List<PaxosLearner> NO_LEARNERS = ImmutableList.of();
     private static final BooleanPaxosResponse SUCCESSFUL_ACCEPTANCE = new BooleanPaxosResponse(true);
-    private static final byte[] VALUE = "hello".getBytes();
+    private static final BooleanPaxosResponse FAILED_ACCEPTANCE = new BooleanPaxosResponse(false);
+
     private static final int KEY = 1;
+    private static final byte[] VALUE = "hello".getBytes();
 
     @Mock
     private PaxosLearner learner;
@@ -50,6 +52,8 @@ public class PaxosProposerTest {
     private List<PaxosLearner> learners;
     @Mock
     private PaxosAcceptor acceptingAcceptor;
+    @Mock
+    private PaxosAcceptor rejectingAcceptor;
 
     private ExecutorService executor = Executors.newSingleThreadExecutor();
 
@@ -59,6 +63,9 @@ public class PaxosProposerTest {
     public void setup() {
         when(acceptingAcceptor.prepare(Matchers.anyLong(), any(PaxosProposalId.class))).thenReturn(successfulPromise());
         when(acceptingAcceptor.accept(Matchers.anyLong(), any(PaxosProposal.class))).thenReturn(SUCCESSFUL_ACCEPTANCE);
+
+        when(rejectingAcceptor.prepare(Matchers.anyLong(), any(PaxosProposalId.class))).thenReturn(failedPromise());
+        when(rejectingAcceptor.accept(Matchers.anyLong(), any(PaxosProposal.class))).thenReturn(FAILED_ACCEPTANCE);
     }
 
     @Test public void
@@ -66,6 +73,17 @@ public class PaxosProposerTest {
         proposer = PaxosProposerImpl.newProposer(learner, ImmutableList.of(acceptingAcceptor), NO_LEARNERS, 1, executor);
 
         assertThat(proposer.propose(KEY, VALUE), is(VALUE));
+    }
+
+    @Test public void
+    should_accept_a_proposal_if_there_are_3_acceptors_2_accept_and_1_rejects() throws PaxosRoundFailureException {
+        proposer = PaxosProposerImpl.newProposer(learner, ImmutableList.of(acceptingAcceptor, acceptingAcceptor, rejectingAcceptor), NO_LEARNERS, 2, executor);
+
+        assertThat(proposer.propose(KEY, VALUE), is(VALUE));
+    }
+
+    private PaxosPromise failedPromise() {
+        return PaxosPromise.create(false, PROPOSAL_ID, null, null);
     }
 
     private PaxosPromise successfulPromise() {
