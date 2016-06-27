@@ -87,33 +87,9 @@ public class PaxosProposerImpl implements PaxosProposer {
         final PaxosProposalId proposalID = new PaxosProposalId(proposalNum.incrementAndGet(), uuid);
         PaxosValue toPropose = new PaxosValue(uuid, seq, bytes);
 
-        // paxos phase one (prepare and promise)
-        final PaxosValue finalValue = phaseOne(seq, proposalID, toPropose);
-
-        // paxos phase two (accept request and accepted)
-        phaseTwo(seq, proposalID, finalValue);
-
-        // broadcast learned value
-        for (final PaxosLearner learner : allLearners) {
-            // local learner is forced to update later
-            if (localLearner == learner) {
-                continue;
-            }
-
-            executor.execute(new Runnable() {
-                @Override
-                public void run() {
-                    try {
-                        learner.learn(seq, finalValue);
-                    } catch (Throwable e) {
-                        log.warn("failed to teach learner", e);
-                    }
-                }
-            });
-        }
-
-        // force local learner to update
-        localLearner.learn(seq, finalValue);
+        final PaxosValue finalValue = prepareAndPromise(seq, proposalID, toPropose);
+        collectAcceptancesForProposal(seq, proposalID, finalValue);
+        broadcastLearnedValue(seq, finalValue);
 
         return finalValue.getData();
     }
@@ -129,7 +105,7 @@ public class PaxosProposerImpl implements PaxosProposer {
      * @return the value accepted by the quorum
      * @throws PaxosRoundFailureException if quorum cannot be reached in this phase
      */
-    private PaxosValue phaseOne(final long seq, final PaxosProposalId pid, PaxosValue value)
+    private PaxosValue prepareAndPromise(final long seq, final PaxosProposalId pid, PaxosValue value)
             throws PaxosRoundFailureException {
         List<PaxosPromise> receivedPromises = PaxosQuorumChecker.<PaxosAcceptor, PaxosPromise> collectQuorumResponses(
                 allAcceptors,
@@ -177,7 +153,7 @@ public class PaxosProposerImpl implements PaxosProposer {
      * @param val the value agree on in phase one of paxos
      * @throws PaxosRoundFailureException if quorum cannot be reached in this phase
      */
-    private void phaseTwo(final long seq, PaxosProposalId pid, PaxosValue val)
+    private void collectAcceptancesForProposal(final long seq, PaxosProposalId pid, PaxosValue val)
             throws PaxosRoundFailureException {
         final PaxosProposal proposal = new PaxosProposal(pid, val);
         List<PaxosResponse> responses = PaxosQuorumChecker.<PaxosAcceptor, PaxosResponse> collectQuorumResponses(
@@ -195,6 +171,29 @@ public class PaxosProposerImpl implements PaxosProposer {
         if (!PaxosQuorumChecker.hasQuorum(responses, quorumSize)) {
             throw new PaxosRoundFailureException("failed to acquire quorum in paxos phase two");
         }
+    }
+
+    private void broadcastLearnedValue(final long seq, final PaxosValue finalValue) {
+        for (final PaxosLearner learner : allLearners) {
+            // local learner is forced to update synchronously
+            if (localLearner == learner) {
+                continue;
+            }
+
+            executor.execute(new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        learner.learn(seq, finalValue);
+                    } catch (Throwable e) {
+                        log.warn("failed to teach learner", e);
+                    }
+                }
+            });
+        }
+
+        // force local learner to update
+        localLearner.learn(seq, finalValue);
     }
 
     @Override
