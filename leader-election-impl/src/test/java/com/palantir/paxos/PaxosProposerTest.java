@@ -21,6 +21,8 @@ import static org.hamcrest.Matchers.lessThan;
 import static org.hamcrest.core.Is.is;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.argThat;
+import static org.mockito.Matchers.eq;
+import static org.mockito.Matchers.longThat;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -51,7 +53,7 @@ public class PaxosProposerTest {
     private static final BooleanPaxosResponse SUCCESSFUL_ACCEPTANCE = new BooleanPaxosResponse(true);
     private static final BooleanPaxosResponse FAILED_ACCEPTANCE = new BooleanPaxosResponse(false);
 
-    private static final int KEY = 1;
+    private static final long KEY = 1;
     private static final byte[] VALUE = "hello".getBytes();
 
     @Mock
@@ -76,14 +78,14 @@ public class PaxosProposerTest {
 
     @Before
     public void setup() {
-        when(acceptingAcceptor.prepare(Matchers.anyLong(), any(PaxosProposalId.class))).thenReturn(successfulPromise());
-        when(acceptingAcceptor.accept(Matchers.anyLong(), any(PaxosProposal.class))).thenReturn(SUCCESSFUL_ACCEPTANCE);
+        when(acceptingAcceptor.prepare(eq(KEY), any(PaxosProposalId.class))).thenReturn(successfulPromise());
+        when(acceptingAcceptor.accept(eq(KEY), any(PaxosProposal.class))).thenReturn(SUCCESSFUL_ACCEPTANCE);
 
-        when(rejectingAcceptor.prepare(Matchers.anyLong(), any(PaxosProposalId.class))).thenReturn(failedPromise());
-        when(rejectingAcceptor.accept(Matchers.anyLong(), any(PaxosProposal.class))).thenReturn(FAILED_ACCEPTANCE);
+        when(rejectingAcceptor.prepare(eq(KEY), any(PaxosProposalId.class))).thenReturn(failedPromise());
+        when(rejectingAcceptor.accept(eq(KEY), any(PaxosProposal.class))).thenReturn(FAILED_ACCEPTANCE);
 
-        when(promiseThenRejectAcceptor.prepare(Matchers.anyLong(), any(PaxosProposalId.class))).thenReturn(successfulPromise());
-        when(promiseThenRejectAcceptor.accept(Matchers.anyLong(), any(PaxosProposal.class))).thenReturn(FAILED_ACCEPTANCE);
+        when(promiseThenRejectAcceptor.prepare(eq(KEY), any(PaxosProposalId.class))).thenReturn(successfulPromise());
+        when(promiseThenRejectAcceptor.accept(eq(KEY), any(PaxosProposal.class))).thenReturn(FAILED_ACCEPTANCE);
     }
 
     @Test public void
