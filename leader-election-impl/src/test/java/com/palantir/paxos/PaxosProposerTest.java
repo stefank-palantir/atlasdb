@@ -18,6 +18,8 @@ package com.palantir.paxos;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
 import static org.mockito.Matchers.any;
+import static org.mockito.Mockito.atLeastOnce;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.util.List;
@@ -48,6 +50,8 @@ public class PaxosProposerTest {
 
     @Mock
     private PaxosLearner learner;
+    @Mock
+    private PaxosLearner otherLearner;
     @Mock
     private List<PaxosAcceptor> acceptor;
     @Mock
@@ -116,6 +120,28 @@ public class PaxosProposerTest {
 
         int quorumSize = 1;
         proposer = PaxosProposerImpl.newProposer(learner, ImmutableList.of(acceptingAcceptor, rejectingAcceptor, rejectingAcceptor), NO_LEARNERS, quorumSize, executor);
+    }
+
+    @Test public void
+    should_teach_its_learner_the_accepted_value() throws PaxosRoundFailureException {
+        proposer = PaxosProposerImpl.newProposer(learner, ImmutableList.of(acceptingAcceptor), NO_LEARNERS, 1, executor);
+
+        proposer.propose(KEY, VALUE);
+
+        verify(learner, atLeastOnce()).learn(KEY, paxosValue());
+    }
+
+    @Test public void
+    should_teach_other_learners_the_accepted_value() throws PaxosRoundFailureException {
+        proposer = PaxosProposerImpl.newProposer(learner, ImmutableList.of(acceptingAcceptor), ImmutableList.of(otherLearner), 1, executor);
+
+        proposer.propose(KEY, VALUE);
+
+        verify(otherLearner, atLeastOnce()).learn(KEY, paxosValue());
+    }
+
+    private PaxosValue paxosValue() {
+        return new PaxosValue(proposer.getUUID(), KEY, VALUE);
     }
 
     private PaxosPromise failedPromise() {
