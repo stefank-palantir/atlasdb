@@ -22,7 +22,6 @@ import static org.hamcrest.core.Is.is;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.argThat;
 import static org.mockito.Matchers.eq;
-import static org.mockito.Matchers.longThat;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -49,12 +48,14 @@ import com.google.common.collect.ImmutableList;
 @RunWith(MockitoJUnitRunner.class)
 public class PaxosProposerTest {
     private static final PaxosProposalId PROPOSAL_ID = new PaxosProposalId(1, UUID.randomUUID().toString());
+    private static final PaxosProposalId ACCEPTED_PROPOSAL_ID = new PaxosProposalId(1, UUID.randomUUID().toString());
     private static final List<PaxosLearner> NO_LEARNERS = ImmutableList.of();
     private static final BooleanPaxosResponse SUCCESSFUL_ACCEPTANCE = new BooleanPaxosResponse(true);
-    private static final BooleanPaxosResponse FAILED_ACCEPTANCE = new BooleanPaxosResponse(false);
 
+    private static final BooleanPaxosResponse FAILED_ACCEPTANCE = new BooleanPaxosResponse(false);
     private static final long KEY = 1;
     private static final byte[] VALUE = "hello".getBytes();
+    private static final byte[] ALREADY_ACCEPTED_VALUE = "world".getBytes();
 
     @Mock
     private PaxosLearner learner;
@@ -160,6 +161,32 @@ public class PaxosProposerTest {
             }
         }
         assertThat(success, is(true));
+    }
+
+    @Test public void
+    should_return_already_accepted_values() throws PaxosRoundFailureException {
+
+        PaxosProposer proposer = createProposerWithAcceptors(ImmutableList.of(
+                alreadyAccepted(ALREADY_ACCEPTED_VALUE),
+                alreadyAccepted(ALREADY_ACCEPTED_VALUE),
+                acceptingAcceptor
+        ));
+
+        assertThat(proposer.propose(KEY, VALUE), is(ALREADY_ACCEPTED_VALUE));
+    }
+
+    private PaxosAcceptor alreadyAccepted(byte[] otherValue) {
+        PaxosAcceptor acceptor = mock(PaxosAcceptor.class);
+
+        when(acceptor.prepare(Matchers.anyLong(), any(PaxosProposalId.class))).thenReturn(alreadyPromised(otherValue));
+
+        when(acceptor.accept(Matchers.anyLong(), any(PaxosProposal.class))).thenReturn(SUCCESSFUL_ACCEPTANCE);
+
+        return acceptor;
+    }
+
+    private PaxosPromise alreadyPromised(byte[] otherValue) {
+        return PaxosPromise.create(true, PROPOSAL_ID, ACCEPTED_PROPOSAL_ID, new PaxosValue("foo", KEY, otherValue));
     }
 
     private PaxosProposer createProposerWithAcceptors(ImmutableList<PaxosAcceptor> acceptors) {
