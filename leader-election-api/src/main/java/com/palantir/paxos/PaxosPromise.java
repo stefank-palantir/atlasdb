@@ -40,6 +40,17 @@ public class PaxosPromise implements Comparable<PaxosPromise>, PaxosResponse {
     @Nullable final PaxosProposalId lastAcceptedId;
     @Nullable final PaxosValue lastAcceptedValue;
 
+    public static PaxosPromise reject(PaxosProposalId highestPromisedId) {
+        return new PaxosPromise(highestPromisedId);
+    }
+
+    public static PaxosPromise accept(PaxosProposalId promisedId,
+                                      PaxosProposalId lastAcceptedId,
+                                      PaxosValue val) {
+        return new PaxosPromise(promisedId, lastAcceptedId, val);
+    }
+
+    @Deprecated // Use factory method reject(promisedId) instead
     public PaxosPromise(PaxosProposalId promisedId) {
         ack = false;
         this.promisedId = Preconditions.checkNotNull(promisedId);
@@ -47,6 +58,7 @@ public class PaxosPromise implements Comparable<PaxosPromise>, PaxosResponse {
         lastAcceptedValue = null;
     }
 
+    @Deprecated // Use factory method accept(promisedId, lastAcceptedId, val) instead
     public PaxosPromise(PaxosProposalId promisedId,
                         PaxosProposalId lastAcceptedId,
                         PaxosValue val) {

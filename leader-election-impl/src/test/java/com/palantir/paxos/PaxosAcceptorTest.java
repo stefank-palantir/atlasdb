@@ -105,7 +105,7 @@ public class PaxosAcceptorTest {
     // Prepare after accept
     @Test
     public void should_accept_prepare_after_accepting_lower_id() {
-        PaxosPromise expected = new PaxosPromise(HIGHER_PROPOSAL_ID, DEFAULT_PROPOSAL_ID, DEFAULT_VALUE);
+        PaxosPromise expected = PaxosPromise.accept(HIGHER_PROPOSAL_ID, DEFAULT_PROPOSAL_ID, DEFAULT_VALUE);
 
         acceptor.prepare(SEQ, DEFAULT_PROPOSAL_ID);
         acceptor.accept(SEQ, DEFAULT_PROPOSAL);
@@ -128,7 +128,7 @@ public class PaxosAcceptorTest {
 
     @Test
     public void should_reject_prepare_after_accepting_higher_id() {
-        PaxosPromise expected = new PaxosPromise(HIGHER_PROPOSAL_ID);
+        PaxosPromise expected = PaxosPromise.reject(HIGHER_PROPOSAL_ID);
 
         acceptor.prepare(SEQ, HIGHER_PROPOSAL_ID);
 
