@@ -25,6 +25,7 @@ import static junit.framework.TestCase.assertNull;
 import java.io.IOException;
 
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -33,6 +34,7 @@ public class PaxosAcceptorTest {
     private static final PaxosProposalId DEFAULT_PROPOSAL_ID = new PaxosProposalId(1L, "uuid");
     private static final PaxosValue DEFAULT_VALUE = new PaxosValue("leader_uuid", 1L, null);
     private static final PaxosProposal DEFAULT_PROPOSAL = new PaxosProposal(DEFAULT_PROPOSAL_ID, DEFAULT_VALUE);
+
     @Rule
     public TemporaryFolder folder = new TemporaryFolder();
 
@@ -110,5 +112,34 @@ public class PaxosAcceptorTest {
 
         PaxosPromise promise = acceptor.prepare(1L, higherProposalId);
         assertEquals(expected, promise);
+        assertThat(promise.ack, is(true));
+    }
+
+    // This seems like a bug to me...
+    @Ignore
+    @Test
+    public void should_reject_prepare_after_accepting_same_id() {
+        acceptor.prepare(1L, DEFAULT_PROPOSAL_ID);
+        acceptor.accept(1L, DEFAULT_PROPOSAL);
+        PaxosPromise promise = acceptor.prepare(1L, DEFAULT_PROPOSAL_ID);
+
+        assertThat(promise.ack, is(false));
+    }
+
+    @Test
+    public void should_reject_prepare_after_accepting_higher_id() {
+        PaxosProposalId higherProposalId =  new PaxosProposalId(2L, "uuid");
+        PaxosPromise expected = new PaxosPromise(higherProposalId);
+
+        acceptor.prepare(1L, higherProposalId);
+
+        // Should the round in the PaxosValue match that in the ProposalId? If so, then this should trigger a failure.
+        PaxosProposal higherProposal = new PaxosProposal(higherProposalId, DEFAULT_VALUE);
+        acceptor.accept(1L, higherProposal);
+
+        PaxosPromise promise = acceptor.prepare(1L, DEFAULT_PROPOSAL_ID);
+
+        assertEquals(expected, promise);
+        assertThat(promise.ack, is(false));
     }
 }
