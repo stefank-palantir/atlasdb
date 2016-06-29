@@ -18,7 +18,6 @@ package com.palantir.paxos;
 
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 
 import static junit.framework.TestCase.assertNull;
@@ -98,5 +97,18 @@ public class PaxosAcceptorTest {
         BooleanPaxosResponse response = acceptor.accept(1L, DEFAULT_PROPOSAL);
 
         assertThat(response.isSuccessful(), is(false));
+    }
+
+    // Prepare after accept
+    @Test
+    public void should_accept_prepare_after_accepting_lower_id() {
+        PaxosProposalId higherProposalId = new PaxosProposalId(2L, "uuid");
+        PaxosPromise expected = new PaxosPromise(higherProposalId, DEFAULT_PROPOSAL_ID, DEFAULT_VALUE);
+
+        acceptor.prepare(1L, DEFAULT_PROPOSAL_ID);
+        acceptor.accept(1L, DEFAULT_PROPOSAL);
+
+        PaxosPromise promise = acceptor.prepare(1L, higherProposalId);
+        assertEquals(expected, promise);
     }
 }
