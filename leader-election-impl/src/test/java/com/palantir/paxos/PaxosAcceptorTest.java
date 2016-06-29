@@ -18,6 +18,7 @@ package com.palantir.paxos;
 
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 
 import static junit.framework.TestCase.assertNull;
@@ -30,6 +31,9 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
 public class PaxosAcceptorTest {
+    private static final PaxosProposalId DEFAULT_PROPOSAL_ID = new PaxosProposalId(1L, "uuid");
+    private static final PaxosValue DEFAULT_VALUE = new PaxosValue("leader_uuid", 1L, null);
+    private static final PaxosProposal DEFAULT_PROPOSAL = new PaxosProposal(DEFAULT_PROPOSAL_ID, DEFAULT_VALUE);
     @Rule
     public TemporaryFolder folder = new TemporaryFolder();
 
@@ -40,10 +44,10 @@ public class PaxosAcceptorTest {
         acceptor = PaxosAcceptorImpl.newAcceptor(folder.newFolder("log").getAbsolutePath());
     }
 
+    // Prepare only
     @Test
     public void should_accept_first_prepare_request() {
-        PaxosProposalId proposalId = new PaxosProposalId(1L, "uuid");
-        PaxosPromise promise = acceptor.prepare(1L, proposalId);
+        PaxosPromise promise = acceptor.prepare(1L, DEFAULT_PROPOSAL_ID);
 
         assertThat(promise.ack, is(true));
         assertNull(promise.getLastAcceptedId());
@@ -54,12 +58,45 @@ public class PaxosAcceptorTest {
         PaxosProposalId higherProposalId = new PaxosProposalId(2L, "uuid");
         acceptor.prepare(1L, higherProposalId);
 
-        PaxosProposalId proposalId = new PaxosProposalId(1L, "uuid");
-        PaxosPromise promise = acceptor.prepare(1L, proposalId);
+        PaxosPromise promise = acceptor.prepare(1L, DEFAULT_PROPOSAL_ID);
 
         assertThat(promise.ack, is(false));
         assertEquals(higherProposalId, promise.promisedId);
-
     }
 
+    @Test
+    public void should_accept_same_propose_twice() {
+        PaxosPromise firstPromise = acceptor.prepare(1L, DEFAULT_PROPOSAL_ID);
+        PaxosPromise secondPromise = acceptor.prepare(1L, DEFAULT_PROPOSAL_ID);
+
+        assertEquals(firstPromise, secondPromise);
+    }
+
+    // Accept only
+    @Test
+    public void should_accept_if_never_proposed() {
+        BooleanPaxosResponse response = acceptor.accept(1L, DEFAULT_PROPOSAL);
+
+        assertThat(response.isSuccessful(), is(true));
+    }
+
+    // Prepare then accept
+    @Test
+    public void should_accept_after_propose_with_same_id() {
+        acceptor.prepare(1L, DEFAULT_PROPOSAL_ID);
+
+        BooleanPaxosResponse response = acceptor.accept(1L, DEFAULT_PROPOSAL);
+
+        assertThat(response.isSuccessful(), is(true));
+    }
+
+    @Test
+    public void should_reject_after_propose_with_higher_id() {
+        PaxosProposalId higherProposalId = new PaxosProposalId(2L, "uuid");
+        acceptor.prepare(1L, higherProposalId);
+
+        BooleanPaxosResponse response = acceptor.accept(1L, DEFAULT_PROPOSAL);
+
+        assertThat(response.isSuccessful(), is(false));
+    }
 }
