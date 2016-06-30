@@ -147,14 +147,7 @@ public class PaxosAcceptorTest {
 
     @Test
     public void should_get_latest_sequence_from_log_before_prepare_or_accept() throws IOException {
-        PaxosStateLogImpl<PaxosAcceptorState> stateLog = new PaxosStateLogImpl<>(logPath);
-
-        // Prepare the log
-        stateLog.writeRound(13L, PaxosAcceptorState.newState(DEFAULT_PROPOSAL_ID));
-
-        PaxosAcceptorImpl acceptorImpl = new PaxosAcceptorImpl(
-                new ConcurrentSkipListMap<>(),
-                stateLog);
+        PaxosAcceptorImpl acceptorImpl = getPaxosAcceptorWithPreparedLog();
 
         long latest = acceptorImpl.getLatestSequencePreparedOrAccepted();
 
@@ -163,25 +156,23 @@ public class PaxosAcceptorTest {
 
     @Test
     public void should_get_latest_sequence_from_state_after_prepare_or_accept() {
-        PaxosStateLogImpl<PaxosAcceptorState> stateLog = new PaxosStateLogImpl<>(logPath);
-
-        // Prepare the log
-        stateLog.writeRound(13L, PaxosAcceptorState.newState(DEFAULT_PROPOSAL_ID));
-
-        PaxosAcceptorImpl acceptorImpl = new PaxosAcceptorImpl(
-                new ConcurrentSkipListMap<>(),
-                stateLog);
-
+        PaxosAcceptorImpl acceptorImpl = getPaxosAcceptorWithPreparedLog();
         acceptorImpl.prepare(14L, DEFAULT_PROPOSAL_ID);
 
         long latest = acceptorImpl.getLatestSequencePreparedOrAccepted();
 
         assertEquals(14L, latest);
-        assertEquals(14L, getGreatestLogEntry()); // we should also update the log in this case
+        assertEquals(14L, acceptorImpl.log.getGreatestLogEntry()); // we should also update the log in this case
     }
 
-    private long getGreatestLogEntry() {
-        PaxosAcceptorImpl acceptorImpl = (PaxosAcceptorImpl) this.acceptor;
-        return acceptorImpl.log.getGreatestLogEntry();
+    private PaxosAcceptorImpl getPaxosAcceptorWithPreparedLog() {
+        PaxosStateLogImpl<PaxosAcceptorState> stateLog = new PaxosStateLogImpl<>(logPath);
+
+        // Prepare the log
+        stateLog.writeRound(13L, PaxosAcceptorState.newState(DEFAULT_PROPOSAL_ID));
+
+        return new PaxosAcceptorImpl(
+                new ConcurrentSkipListMap<>(),
+                stateLog);
     }
 }
