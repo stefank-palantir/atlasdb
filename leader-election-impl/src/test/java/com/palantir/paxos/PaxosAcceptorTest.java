@@ -141,4 +141,26 @@ public class PaxosAcceptorTest {
         assertEquals(expected, promise);
         assertThat(promise.ack, is(false));
     }
+
+    @Test
+    public void should_get_latest_sequence_from_log_before_prepare_or_accept() {
+        long latest = acceptor.getLatestSequencePreparedOrAccepted();
+
+        assertEquals(getGreatestLogEntry(), latest);
+    }
+
+    @Test
+    public void should_get_latest_sequence_from_state_after_prepare_or_accept() {
+        acceptor.prepare(2L, DEFAULT_PROPOSAL_ID);
+
+        long latest = acceptor.getLatestSequencePreparedOrAccepted();
+
+        assertEquals(2L, latest);
+        assertEquals(2L, getGreatestLogEntry()); // we should also update the log in this case
+    }
+
+    private long getGreatestLogEntry() {
+        PaxosAcceptorImpl acceptorImpl = (PaxosAcceptorImpl) this.acceptor;
+        return acceptorImpl.log.getGreatestLogEntry();
+    }
 }
