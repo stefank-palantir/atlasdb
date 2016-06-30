@@ -30,23 +30,21 @@ public class PaxosAcceptorImpl implements PaxosAcceptor {
      * @return a new acceptor
      */
     public static PaxosAcceptor newAcceptor(String logDir) {
-        PaxosStateLog<PaxosAcceptorState> log = new PaxosStateLogImpl<PaxosAcceptorState>(logDir);
+        PaxosStateLog<PaxosAcceptorState> log = new PaxosStateLogImpl<>(logDir);
         return new PaxosAcceptorImpl(
-                new ConcurrentSkipListMap<Long, PaxosAcceptorState>(),
-                log,
-                log.getGreatestLogEntry());
+                new ConcurrentSkipListMap<>(),
+                log);
     }
 
     final ConcurrentSkipListMap<Long, PaxosAcceptorState> state;
     final PaxosStateLog<PaxosAcceptorState> log;
     final long greatestInLogAtStartup;
 
-    private PaxosAcceptorImpl(ConcurrentSkipListMap<Long, PaxosAcceptorState> state,
-                              PaxosStateLog<PaxosAcceptorState> log,
-                              long greatestInLogAtStartup) {
+    public PaxosAcceptorImpl(ConcurrentSkipListMap<Long, PaxosAcceptorState> state,
+                             PaxosStateLog<PaxosAcceptorState> log) {
         this.state = state;
         this.log = log;
-        this.greatestInLogAtStartup = greatestInLogAtStartup;
+        this.greatestInLogAtStartup = log.getGreatestLogEntry();
     }
 
     @Override
