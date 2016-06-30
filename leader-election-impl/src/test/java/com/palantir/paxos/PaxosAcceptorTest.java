@@ -70,6 +70,7 @@ public class PaxosAcceptorTest {
         assertEquals(HIGHER_PROPOSAL_ID, promise.promisedId);
     }
 
+    // TODO this passes... but should it?
     @Test
     public void should_accept_same_propose_twice() {
         PaxosPromise firstPromise = acceptor.prepare(SEQ, DEFAULT_PROPOSAL_ID);
@@ -145,6 +146,8 @@ public class PaxosAcceptorTest {
         assertThat(promise.ack, is(false));
     }
 
+    // Tests handling persistence / logs
+    // TODO extract 13L -> some SEQ-like constant; consider if we're testing the right thing here
     @Test
     public void should_get_latest_sequence_from_log_before_prepare_or_accept() throws IOException {
         PaxosAcceptorImpl acceptorImpl = getPaxosAcceptorWithPreparedLog();

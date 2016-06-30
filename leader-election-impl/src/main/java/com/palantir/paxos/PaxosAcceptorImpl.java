@@ -59,7 +59,6 @@ public class PaxosAcceptorImpl implements PaxosAcceptor {
         for (;;) {
             PaxosAcceptorState oldState = state.get(seq);
 
-            // nack
             if (oldState != null && pid.compareTo(oldState.lastPromisedId) < 0) {
                 return PaxosPromise.reject(oldState.lastPromisedId);
             }
