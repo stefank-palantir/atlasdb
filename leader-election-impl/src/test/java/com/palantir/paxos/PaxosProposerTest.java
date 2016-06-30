@@ -54,7 +54,7 @@ public class PaxosProposerTest {
 
     private static final BooleanPaxosResponse FAILED_ACCEPTANCE = new BooleanPaxosResponse(false);
     private static final long SEQ = 1L;
-    private static final PaxosKey KEY = new PaxosKey(SEQ);
+    private static final PaxosKey KEY = ImmutablePaxosKey.builder().seq(SEQ).build();
     private static final byte[] VALUE = "hello".getBytes();
     private static final byte[] ALREADY_ACCEPTED_VALUE = "world".getBytes();
 

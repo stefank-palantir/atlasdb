@@ -2,6 +2,7 @@ apply from: "../gradle/shared.gradle"
 
 apply plugin: 'java'
 apply plugin: 'eclipse'
+apply plugin: 'org.inferred.processors'
 
 repositories {
     mavenCentral()
@@ -16,4 +17,6 @@ dependencies {
           version: libVersions.commons_lang)
   compile 'javax.ws.rs:javax.ws.rs-api:2.0.1'
   compile 'com.fasterxml.jackson.core:jackson-annotations:' + libVersions.jackson_annotation
+
+  processor 'org.immutables:value:2.0.21'
 }

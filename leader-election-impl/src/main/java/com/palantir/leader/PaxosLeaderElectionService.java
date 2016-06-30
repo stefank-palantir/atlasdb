@@ -49,6 +49,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.net.HostAndPort;
 import com.palantir.common.base.Throwables;
+import com.palantir.paxos.ImmutablePaxosKey;
 import com.palantir.paxos.PaxosAcceptor;
 import com.palantir.paxos.PaxosKey;
 import com.palantir.paxos.PaxosLearner;
@@ -343,7 +344,8 @@ public class PaxosLeaderElectionService implements PingableLeader, LeaderElectio
             }
 
             leaderLog.info("Proposing leadership with sequence number " + seq);
-            proposer.propose(new PaxosKey(seq), null);
+            PaxosKey key = ImmutablePaxosKey.builder().seq(seq).build();
+            proposer.propose(key, null);
         } catch (PaxosRoundFailureException e) {
             // We have failed trying to become the leader.
             leaderLog.warn("Leadership was not gained", e);

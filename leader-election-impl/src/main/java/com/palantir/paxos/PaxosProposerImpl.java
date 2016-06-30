@@ -84,7 +84,7 @@ public class PaxosProposerImpl implements PaxosProposer {
 
     @Override
     public byte[] propose(final PaxosKey key, @Nullable byte[] bytes) throws PaxosRoundFailureException {
-        long seq = key.getSeq();
+        long seq = key.seq();
         final PaxosProposalId proposalID = new PaxosProposalId(proposalNum.incrementAndGet(), uuid);
         PaxosValue toPropose = new PaxosValue(uuid, seq, bytes);
 

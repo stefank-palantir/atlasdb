@@ -16,17 +16,9 @@
 
 package com.palantir.paxos;
 
-public class PaxosKey {
-    private final long seq;
+import org.immutables.value.Value;
 
-    /**
-     * @param seq the number identifying this instance of paxos
-     */
-    public PaxosKey(long seq) {
-        this.seq = seq;
-    }
-
-    public long getSeq() {
-        return seq;
-    }
+@Value.Immutable
+public abstract class PaxosKey {
+    public abstract long seq();
 }
