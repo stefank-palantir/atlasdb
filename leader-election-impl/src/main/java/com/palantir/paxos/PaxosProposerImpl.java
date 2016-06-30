@@ -83,7 +83,8 @@ public class PaxosProposerImpl implements PaxosProposer {
     }
 
     @Override
-    public byte[] propose(final long seq, @Nullable byte[] bytes) throws PaxosRoundFailureException {
+    public byte[] propose(final PaxosKey key, @Nullable byte[] bytes) throws PaxosRoundFailureException {
+        long seq = key.getSeq();
         final PaxosProposalId proposalID = new PaxosProposalId(proposalNum.incrementAndGet(), uuid);
         PaxosValue toPropose = new PaxosValue(uuid, seq, bytes);
 
@@ -99,8 +100,8 @@ public class PaxosProposerImpl implements PaxosProposer {
      * http://en.wikipedia.org/wiki/Paxos_(computer_science)#Basic_Paxos)
      *
      * @param seq the number identifying this instance of paxos
-     * @param proposalID the id of the proposal currently being considered
-     * @param proposalValue the default proposal value if no member of the quorum has already
+     * @param pid the id of the proposal currently being considered
+     * @param value the default proposal value if no member of the quorum has already
      *        accepted an offer
      * @return the value accepted by the quorum
      * @throws PaxosRoundFailureException if quorum cannot be reached in this phase

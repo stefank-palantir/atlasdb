@@ -20,10 +20,10 @@ import javax.annotation.Nullable;
 public interface PaxosProposer {
 
     /**
-     * Reaches a consensus with peers on a value of type V using a single instance of paxos. The
+     * Reaches a consensus with peers on a value of type V using a single instance of Paxos. The
      * proposer is required to update its own local learned state before returning.
      *
-     * @param seq the number identifying this instance of paxos
+     * @param key the key identifying this instance of Paxos
      * @param proposalValue default value to propose to the quorum
      * @return the value accepted by the quorum.  This may not be the value you have proposed.
      * @throws PaxosRoundFailureException if the proposal round fails. The primary reasons a round
@@ -34,7 +34,7 @@ public interface PaxosProposer {
      *         equipped to handle this case. PaxosProposerImpl will not throw in this case,
      *         but requires it be enforced on a higher level.
      */
-    public byte[] propose(long seq, @Nullable byte[] proposalValue)
+    public byte[] propose(PaxosKey key, @Nullable byte[] proposalValue)
             throws PaxosRoundFailureException;
 
     /**

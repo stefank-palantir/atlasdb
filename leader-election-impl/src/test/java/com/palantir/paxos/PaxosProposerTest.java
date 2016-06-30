@@ -53,7 +53,8 @@ public class PaxosProposerTest {
     private static final BooleanPaxosResponse SUCCESSFUL_ACCEPTANCE = new BooleanPaxosResponse(true);
 
     private static final BooleanPaxosResponse FAILED_ACCEPTANCE = new BooleanPaxosResponse(false);
-    private static final long KEY = 1;
+    private static final long SEQ = 1L;
+    private static final PaxosKey KEY = new PaxosKey(SEQ);
     private static final byte[] VALUE = "hello".getBytes();
     private static final byte[] ALREADY_ACCEPTED_VALUE = "world".getBytes();
 
@@ -79,14 +80,14 @@ public class PaxosProposerTest {
 
     @Before
     public void setup() {
-        when(acceptingAcceptor.prepare(eq(KEY), any(PaxosProposalId.class))).thenReturn(successfulPromise());
-        when(acceptingAcceptor.accept(eq(KEY), any(PaxosProposal.class))).thenReturn(SUCCESSFUL_ACCEPTANCE);
+        when(acceptingAcceptor.prepare(eq(SEQ), any(PaxosProposalId.class))).thenReturn(successfulPromise());
+        when(acceptingAcceptor.accept(eq(SEQ), any(PaxosProposal.class))).thenReturn(SUCCESSFUL_ACCEPTANCE);
 
-        when(rejectingAcceptor.prepare(eq(KEY), any(PaxosProposalId.class))).thenReturn(failedPromise());
-        when(rejectingAcceptor.accept(eq(KEY), any(PaxosProposal.class))).thenReturn(FAILED_ACCEPTANCE);
+        when(rejectingAcceptor.prepare(eq(SEQ), any(PaxosProposalId.class))).thenReturn(failedPromise());
+        when(rejectingAcceptor.accept(eq(SEQ), any(PaxosProposal.class))).thenReturn(FAILED_ACCEPTANCE);
 
-        when(promiseThenRejectAcceptor.prepare(eq(KEY), any(PaxosProposalId.class))).thenReturn(successfulPromise());
-        when(promiseThenRejectAcceptor.accept(eq(KEY), any(PaxosProposal.class))).thenReturn(FAILED_ACCEPTANCE);
+        when(promiseThenRejectAcceptor.prepare(eq(SEQ), any(PaxosProposalId.class))).thenReturn(successfulPromise());
+        when(promiseThenRejectAcceptor.accept(eq(SEQ), any(PaxosProposal.class))).thenReturn(FAILED_ACCEPTANCE);
     }
 
     @Test public void
@@ -135,7 +136,7 @@ public class PaxosProposerTest {
 
         proposer.propose(KEY, VALUE);
 
-        verify(learner, atLeastOnce()).learn(KEY, paxosValueFor(proposer));
+        verify(learner, atLeastOnce()).learn(SEQ, paxosValueFor(proposer));
     }
 
     @Test public void
@@ -144,7 +145,7 @@ public class PaxosProposerTest {
 
         proposer.propose(KEY, VALUE);
 
-        verify(otherLearner, atLeastOnce()).learn(KEY, paxosValueFor(proposer));
+        verify(otherLearner, atLeastOnce()).learn(SEQ, paxosValueFor(proposer));
     }
 
     @Test public void
@@ -186,7 +187,7 @@ public class PaxosProposerTest {
     }
 
     private PaxosPromise alreadyPromised(byte[] otherValue) {
-        return PaxosPromise.create(true, PROPOSAL_ID, ACCEPTED_PROPOSAL_ID, new PaxosValue("foo", KEY, otherValue));
+        return PaxosPromise.create(true, PROPOSAL_ID, ACCEPTED_PROPOSAL_ID, new PaxosValue("foo", SEQ, otherValue));
     }
 
     private PaxosProposer createProposerWithAcceptors(ImmutableList<PaxosAcceptor> acceptors) {
@@ -216,7 +217,7 @@ public class PaxosProposerTest {
     }
 
     private PaxosValue paxosValueFor(PaxosProposer proposer) {
-        return new PaxosValue(proposer.getUUID(), KEY, VALUE);
+        return new PaxosValue(proposer.getUUID(), SEQ, VALUE);
     }
 
     private PaxosPromise failedPromise() {
