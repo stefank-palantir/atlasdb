@@ -165,6 +165,26 @@ public class PaxosAcceptorTest {
         assertEquals(14L, acceptorImpl.log.getGreatestLogEntry()); // we should also update the log in this case
     }
 
+    @Test
+    public void should_reject_prepare_below_log_cutoff() {
+        PaxosAcceptorImpl acceptorImpl = getPaxosAcceptorWithPreparedLog();
+        acceptorImpl.log.truncate(13L);
+        PaxosPromise expected = PaxosPromise.reject(DEFAULT_PROPOSAL_ID);
+
+        PaxosPromise promise = acceptorImpl.prepare(SEQ, DEFAULT_PROPOSAL_ID);
+        assertEquals(expected, promise);
+    }
+
+    @Test
+    public void should_reject_accept_below_log_cutoff() {
+        PaxosAcceptorImpl acceptorImpl = getPaxosAcceptorWithPreparedLog();
+        acceptorImpl.log.truncate(13L);
+
+        BooleanPaxosResponse response = acceptorImpl.accept(SEQ, DEFAULT_PROPOSAL);
+
+        assertThat(response.isSuccessful(), is(false));
+    }
+
     private PaxosAcceptorImpl getPaxosAcceptorWithPreparedLog() {
         PaxosStateLogImpl<PaxosAcceptorState> stateLog = new PaxosStateLogImpl<>(logPath);
 
