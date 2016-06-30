@@ -18,7 +18,12 @@ package com.palantir.paxos;
 
 import org.immutables.value.Value;
 
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+
 @Value.Immutable
+@JsonDeserialize(as = ImmutablePaxosKey.class)
+@JsonSerialize(as = ImmutablePaxosKey.class)
 public abstract class PaxosKey {
     public abstract long seq();
 }
