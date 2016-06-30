@@ -23,6 +23,7 @@ import static org.junit.Assert.assertThat;
 import static junit.framework.TestCase.assertNull;
 
 import java.io.IOException;
+import java.util.concurrent.ConcurrentSkipListMap;
 
 import org.junit.Before;
 import org.junit.Ignore;
@@ -42,10 +43,12 @@ public class PaxosAcceptorTest {
     public TemporaryFolder folder = new TemporaryFolder();
 
     private PaxosAcceptor acceptor;
+    private String logPath;
 
     @Before
     public void setUp() throws IOException {
-        acceptor = PaxosAcceptorImpl.newAcceptor(folder.newFolder("log").getAbsolutePath());
+        logPath = folder.newFolder("log").getAbsolutePath();
+        acceptor = PaxosAcceptorImpl.newAcceptor(logPath);
     }
 
     // Prepare only
@@ -143,20 +146,38 @@ public class PaxosAcceptorTest {
     }
 
     @Test
-    public void should_get_latest_sequence_from_log_before_prepare_or_accept() {
-        long latest = acceptor.getLatestSequencePreparedOrAccepted();
+    public void should_get_latest_sequence_from_log_before_prepare_or_accept() throws IOException {
+        PaxosStateLogImpl<PaxosAcceptorState> stateLog = new PaxosStateLogImpl<>(logPath);
 
-        assertEquals(getGreatestLogEntry(), latest);
+        // Prepare the log
+        stateLog.writeRound(13L, PaxosAcceptorState.newState(DEFAULT_PROPOSAL_ID));
+
+        PaxosAcceptorImpl acceptorImpl = new PaxosAcceptorImpl(
+                new ConcurrentSkipListMap<>(),
+                stateLog);
+
+        long latest = acceptorImpl.getLatestSequencePreparedOrAccepted();
+
+        assertEquals(13L, latest);
     }
 
     @Test
     public void should_get_latest_sequence_from_state_after_prepare_or_accept() {
-        acceptor.prepare(2L, DEFAULT_PROPOSAL_ID);
+        PaxosStateLogImpl<PaxosAcceptorState> stateLog = new PaxosStateLogImpl<>(logPath);
 
-        long latest = acceptor.getLatestSequencePreparedOrAccepted();
+        // Prepare the log
+        stateLog.writeRound(13L, PaxosAcceptorState.newState(DEFAULT_PROPOSAL_ID));
 
-        assertEquals(2L, latest);
-        assertEquals(2L, getGreatestLogEntry()); // we should also update the log in this case
+        PaxosAcceptorImpl acceptorImpl = new PaxosAcceptorImpl(
+                new ConcurrentSkipListMap<>(),
+                stateLog);
+
+        acceptorImpl.prepare(14L, DEFAULT_PROPOSAL_ID);
+
+        long latest = acceptorImpl.getLatestSequencePreparedOrAccepted();
+
+        assertEquals(14L, latest);
+        assertEquals(14L, getGreatestLogEntry()); // we should also update the log in this case
     }
 
     private long getGreatestLogEntry() {
