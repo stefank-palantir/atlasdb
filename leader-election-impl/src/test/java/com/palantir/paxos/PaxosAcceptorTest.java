@@ -185,11 +185,21 @@ public class PaxosAcceptorTest {
         assertThat(response.isSuccessful(), is(false));
     }
 
+    @Test
+    public void should_reject_prepare_below_previously_logged_entry() {
+        PaxosAcceptorImpl acceptorImpl = getPaxosAcceptorWithPreparedLog();
+        PaxosPromise expected = PaxosPromise.reject(HIGHER_PROPOSAL_ID);
+
+        PaxosPromise promise = acceptorImpl.prepare(13L, DEFAULT_PROPOSAL_ID);
+
+        assertEquals(expected, promise);
+    }
+
     private PaxosAcceptorImpl getPaxosAcceptorWithPreparedLog() {
         PaxosStateLogImpl<PaxosAcceptorState> stateLog = new PaxosStateLogImpl<>(logPath);
 
         // Prepare the log
-        stateLog.writeRound(13L, PaxosAcceptorState.newState(DEFAULT_PROPOSAL_ID));
+        stateLog.writeRound(13L, PaxosAcceptorState.newState(HIGHER_PROPOSAL_ID));
 
         return new PaxosAcceptorImpl(
                 new ConcurrentSkipListMap<>(),
