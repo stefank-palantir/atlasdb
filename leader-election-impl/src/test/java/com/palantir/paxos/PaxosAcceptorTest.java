@@ -26,6 +26,7 @@ import java.io.IOException;
 import java.util.concurrent.ConcurrentSkipListMap;
 
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -85,7 +86,7 @@ public class PaxosAcceptorTest {
     // Accept only
     @Test
     public void should_successfully_accept_even_if_never_prepared() {
-        BooleanPaxosResponse response = acceptor.accept(KEY, DEFAULT_PROPOSAL);
+        BooleanPaxosResponse response = acceptor.accept(SEQ, DEFAULT_PROPOSAL);
 
         assertThat(response.isSuccessful(), is(true));
     }
@@ -95,7 +96,7 @@ public class PaxosAcceptorTest {
     public void should_successfully_accept_after_prepare_with_same_id() {
         acceptor.prepare(KEY, DEFAULT_PROPOSAL_ID);
 
-        BooleanPaxosResponse response = acceptor.accept(KEY, DEFAULT_PROPOSAL);
+        BooleanPaxosResponse response = acceptor.accept(SEQ, DEFAULT_PROPOSAL);
 
         assertThat(response.isSuccessful(), is(true));
     }
@@ -104,7 +105,7 @@ public class PaxosAcceptorTest {
     public void should_not_accept_after_prepare_with_higher_id() {
         acceptor.prepare(KEY, HIGHER_PROPOSAL_ID);
 
-        BooleanPaxosResponse response = acceptor.accept(KEY, DEFAULT_PROPOSAL);
+        BooleanPaxosResponse response = acceptor.accept(SEQ, DEFAULT_PROPOSAL);
 
         assertThat(response.isSuccessful(), is(false));
     }
@@ -115,7 +116,7 @@ public class PaxosAcceptorTest {
         PaxosPromise expected = PaxosPromise.accept(HIGHER_PROPOSAL_ID, DEFAULT_PROPOSAL_ID, DEFAULT_VALUE);
 
         acceptor.prepare(KEY, DEFAULT_PROPOSAL_ID);
-        acceptor.accept(KEY, DEFAULT_PROPOSAL);
+        acceptor.accept(SEQ, DEFAULT_PROPOSAL);
 
         PaxosPromise promise = acceptor.prepare(KEY, HIGHER_PROPOSAL_ID);
         assertEquals(expected, promise);
@@ -125,7 +126,7 @@ public class PaxosAcceptorTest {
     @Test
     public void should_ack_prepare_after_accepting_same_id() {
         acceptor.prepare(KEY, DEFAULT_PROPOSAL_ID);
-        acceptor.accept(KEY, DEFAULT_PROPOSAL);
+        acceptor.accept(SEQ, DEFAULT_PROPOSAL);
         PaxosPromise expected = PaxosPromise.accept(DEFAULT_PROPOSAL_ID, DEFAULT_PROPOSAL_ID, DEFAULT_PROPOSAL.getValue());
 
         PaxosPromise promise = acceptor.prepare(KEY, DEFAULT_PROPOSAL_ID);
@@ -141,7 +142,7 @@ public class PaxosAcceptorTest {
 
         // Should the round in the PaxosValue match that in the ProposalId? If so, then this should trigger a failure.
         PaxosProposal higherProposal = new PaxosProposal(HIGHER_PROPOSAL_ID, DEFAULT_VALUE);
-        acceptor.accept(KEY, higherProposal);
+        acceptor.accept(SEQ, higherProposal);
 
         PaxosPromise promise = acceptor.prepare(KEY, DEFAULT_PROPOSAL_ID);
 
@@ -187,7 +188,7 @@ public class PaxosAcceptorTest {
         PaxosAcceptorImpl acceptorImpl = getPaxosAcceptorWithPreparedLog();
         acceptorImpl.log.truncate(LOGGED_SEQ);
 
-        BooleanPaxosResponse response = acceptorImpl.accept(KEY, DEFAULT_PROPOSAL);
+        BooleanPaxosResponse response = acceptorImpl.accept(SEQ, DEFAULT_PROPOSAL);
 
         assertThat(response.isSuccessful(), is(false));
     }
