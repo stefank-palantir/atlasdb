@@ -16,6 +16,8 @@
 
 package com.palantir.paxos;
 
+import java.io.Serializable;
+
 import org.immutables.value.Value;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
@@ -24,6 +26,15 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 @Value.Immutable
 @JsonDeserialize(as = ImmutablePaxosKey.class)
 @JsonSerialize(as = ImmutablePaxosKey.class)
-public abstract class PaxosKey {
+public abstract class PaxosKey implements Comparable<PaxosKey>, Serializable {
+    @Override
+    public int compareTo(PaxosKey o) {
+        return ((Long) seq()).compareTo(o.seq());
+    }
+
     public abstract long seq();
+
+    public static PaxosKey fromSeq(long seq) {
+        return ImmutablePaxosKey.builder().seq(seq).build();
+    }
 }

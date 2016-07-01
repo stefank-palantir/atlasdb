@@ -39,7 +39,7 @@ public class PaxosValue implements Persistable, Versionable, Serializable {
     @Nullable
     final byte[] data;
     final String leaderUUID;
-    final long seq;
+    final PaxosKey key;
 
     public static final Hydrator<PaxosValue> BYTES_HYDRATOR = new Hydrator<PaxosValue>() {
         @Override
@@ -54,10 +54,10 @@ public class PaxosValue implements Persistable, Versionable, Serializable {
     };
 
     public PaxosValue(@JsonProperty("leaderUUID") String leaderUUID,
-                      @JsonProperty("round") long round,
+                      @JsonProperty("round") PaxosKey key,
                       @JsonProperty("data") @Nullable byte[] data) {
         this.leaderUUID = Preconditions.checkNotNull(leaderUUID);
-        this.seq = round;
+        this.key = key;
         this.data = data;
     }
 
@@ -66,7 +66,7 @@ public class PaxosValue implements Persistable, Versionable, Serializable {
     }
 
     public long getRound() {
-        return seq;
+        return key.seq();
     }
 
     public byte[] getData() {
@@ -75,7 +75,7 @@ public class PaxosValue implements Persistable, Versionable, Serializable {
 
     public PaxosPersistence.PaxosValue persistToProto() {
         PaxosPersistence.PaxosValue.Builder b = PaxosPersistence.PaxosValue.newBuilder();
-        b.setLeaderUUID(leaderUUID).setSeq(seq);
+        b.setLeaderUUID(leaderUUID).setSeq(key.seq());
         if (data != null) {
             b.setBytes(ByteString.copyFrom(data));
         }
@@ -95,7 +95,7 @@ public class PaxosValue implements Persistable, Versionable, Serializable {
         if (message.hasBytes()) {
             bytes = message.getBytes().toByteArray();
         }
-        return new PaxosValue(leaderUUID, seq, bytes);
+        return new PaxosValue(leaderUUID, PaxosKey.fromSeq(seq), bytes);
     }
 
     @Override
@@ -116,7 +116,7 @@ public class PaxosValue implements Persistable, Versionable, Serializable {
         result = prime * result + Arrays.hashCode(data);
         result = prime * result
                 + ((leaderUUID == null) ? 0 : leaderUUID.hashCode());
-        result = prime * result + (int) (seq ^ (seq >>> 32));
+        result = prime * result + ((key == null) ? 0 : key.hashCode());
         return result;
     }
 
@@ -142,7 +142,7 @@ public class PaxosValue implements Persistable, Versionable, Serializable {
         } else if (!leaderUUID.equals(other.leaderUUID)) {
             return false;
         }
-        if (seq != other.seq) {
+        if (key != null ? !key.equals(other.key) : other.key != null) {
             return false;
         }
         return true;
@@ -153,7 +153,7 @@ public class PaxosValue implements Persistable, Versionable, Serializable {
         return "PaxosValue{"
                 + "data=" + (data == null ? "null" : BaseEncoding.base16().encode(data))
                 + ", leaderUUID='" + leaderUUID + '\''
-                + ", seq=" + seq
+                + ", seq=" + key.seq()
                 + '}';
     }
 

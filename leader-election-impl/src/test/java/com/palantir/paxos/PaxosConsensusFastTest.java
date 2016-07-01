@@ -158,7 +158,7 @@ public class PaxosConsensusFastTest {
 
         // write to log
         PaxosStateLog<PaxosValue> log = new PaxosStateLogImpl<PaxosValue>(dir);
-        log.writeRound(seq, new PaxosValue(leaderUUID, 0, null));
+        log.writeRound(seq, new PaxosValue(leaderUUID, PaxosKey.fromSeq(0), null));
 
         // read back from log
         try {
