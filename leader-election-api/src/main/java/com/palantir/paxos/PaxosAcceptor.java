@@ -30,7 +30,7 @@ public interface PaxosAcceptor {
      * The acceptor prepares for a given proposal by either promising not to accept future proposals
      * or rejecting the proposal.
      *
-     * @param seq the number identifying this instance of paxos
+     * @param key the key identifying this instance of Paxos
      * @param pid the proposal to prepare for
      * @return a paxos promise not to accept lower numbered proposals
      */
@@ -43,15 +43,15 @@ public interface PaxosAcceptor {
     /**
      * The acceptor decides whether to accept or reject a given proposal.
      *
-     * @param seq the number identifying this instance of paxos
+     * @param key the key identifying this instance of Paxos
      * @param proposal the proposal in question
      * @return a paxos message indicating if the proposal was accepted or rejected
      */
     @POST
-    @Path("accept/{seq}")
+    @Path("accept/{key}")
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
-    public BooleanPaxosResponse accept(@PathParam("seq") long seq, PaxosProposal proposal);
+    public BooleanPaxosResponse accept(@PathParam("key") PaxosKey key, PaxosProposal proposal);
 
     /**
      * Gets the sequence number of the acceptor's most recent known round.

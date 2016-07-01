@@ -88,7 +88,8 @@ public class PaxosAcceptorImpl implements PaxosAcceptor {
     }
 
     @Override
-    public BooleanPaxosResponse accept(long seq, PaxosProposal proposal) {
+    public BooleanPaxosResponse accept(PaxosKey key, PaxosProposal proposal) {
+        long seq = key.seq(); // TODO remove + refactor
         try {
             checkLogIfNeeded(seq);
         } catch (Exception e) {

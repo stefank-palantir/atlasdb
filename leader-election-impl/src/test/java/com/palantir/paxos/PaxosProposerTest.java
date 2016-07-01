@@ -81,13 +81,13 @@ public class PaxosProposerTest {
     @Before
     public void setup() {
         when(acceptingAcceptor.prepare(eq(KEY), any(PaxosProposalId.class))).thenReturn(successfulPromise());
-        when(acceptingAcceptor.accept(eq(SEQ), any(PaxosProposal.class))).thenReturn(SUCCESSFUL_ACCEPTANCE);
+        when(acceptingAcceptor.accept(eq(KEY), any(PaxosProposal.class))).thenReturn(SUCCESSFUL_ACCEPTANCE);
 
         when(rejectingAcceptor.prepare(eq(KEY), any(PaxosProposalId.class))).thenReturn(failedPromise());
-        when(rejectingAcceptor.accept(eq(SEQ), any(PaxosProposal.class))).thenReturn(FAILED_ACCEPTANCE);
+        when(rejectingAcceptor.accept(eq(KEY), any(PaxosProposal.class))).thenReturn(FAILED_ACCEPTANCE);
 
         when(promiseThenRejectAcceptor.prepare(eq(KEY), any(PaxosProposalId.class))).thenReturn(successfulPromise());
-        when(promiseThenRejectAcceptor.accept(eq(SEQ), any(PaxosProposal.class))).thenReturn(FAILED_ACCEPTANCE);
+        when(promiseThenRejectAcceptor.accept(eq(KEY), any(PaxosProposal.class))).thenReturn(FAILED_ACCEPTANCE);
     }
 
     @Test public void
@@ -181,7 +181,7 @@ public class PaxosProposerTest {
 
         when(acceptor.prepare(Matchers.any(PaxosKey.class), any(PaxosProposalId.class))).thenReturn(alreadyPromised(otherValue));
 
-        when(acceptor.accept(Matchers.anyLong(), any(PaxosProposal.class))).thenReturn(SUCCESSFUL_ACCEPTANCE);
+        when(acceptor.accept(Matchers.any(PaxosKey.class), any(PaxosProposal.class))).thenReturn(SUCCESSFUL_ACCEPTANCE);
 
         return acceptor;
     }
@@ -201,7 +201,7 @@ public class PaxosProposerTest {
         when(acceptor.prepare(Matchers.any(PaxosKey.class), argThat(hasProposalNumber(lessThan(lastPromisedNumber))))).thenReturn(failedPromise());
         when(acceptor.prepare(Matchers.any(PaxosKey.class), argThat(hasProposalNumber(greaterThanOrEqualTo(lastPromisedNumber))))).thenReturn(successfulPromise());
 
-        when(acceptor.accept(Matchers.anyLong(), any(PaxosProposal.class))).thenReturn(SUCCESSFUL_ACCEPTANCE);
+        when(acceptor.accept(Matchers.any(PaxosKey.class), any(PaxosProposal.class))).thenReturn(SUCCESSFUL_ACCEPTANCE);
 
         return acceptor;
     }
