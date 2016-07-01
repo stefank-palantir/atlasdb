@@ -33,7 +33,6 @@ import org.junit.rules.TemporaryFolder;
 
 public class PaxosAcceptorTest {
     private static final long SEQ = 1L;
-    private static final PaxosKey KEY = PaxosKey.fromSeq(SEQ);
 
     private static final PaxosProposalId DEFAULT_PROPOSAL_ID = new PaxosProposalId(1L, "uuid");
     private static final PaxosValue DEFAULT_VALUE = new PaxosValue("leader_uuid", PaxosKey.fromSeq(1L), null);
@@ -56,7 +55,7 @@ public class PaxosAcceptorTest {
     // Prepare only
     @Test
     public void should_ack_first_prepare_request() {
-        PaxosPromise promise = acceptor.prepare(KEY, DEFAULT_PROPOSAL_ID);
+        PaxosPromise promise = acceptor.prepare(SEQ, DEFAULT_PROPOSAL_ID);
 
         assertThat(promise.ack, is(true));
         assertNull(promise.getLastAcceptedId());
@@ -64,9 +63,9 @@ public class PaxosAcceptorTest {
 
     @Test
     public void should_reject_prepare_request_with_lower_promised_id() {
-        acceptor.prepare(KEY, HIGHER_PROPOSAL_ID);
+        acceptor.prepare(SEQ, HIGHER_PROPOSAL_ID);
 
-        PaxosPromise promise = acceptor.prepare(KEY, DEFAULT_PROPOSAL_ID);
+        PaxosPromise promise = acceptor.prepare(SEQ, DEFAULT_PROPOSAL_ID);
 
         assertThat(promise.ack, is(false));
         assertEquals(HIGHER_PROPOSAL_ID, promise.promisedId);
@@ -76,8 +75,8 @@ public class PaxosAcceptorTest {
     public void should_ack_same_prepare_twice() {
         PaxosPromise expected = PaxosPromise.accept(DEFAULT_PROPOSAL_ID, null, null);
 
-        PaxosPromise firstPromise = acceptor.prepare(KEY, DEFAULT_PROPOSAL_ID);
-        PaxosPromise secondPromise = acceptor.prepare(KEY, DEFAULT_PROPOSAL_ID);
+        PaxosPromise firstPromise = acceptor.prepare(SEQ, DEFAULT_PROPOSAL_ID);
+        PaxosPromise secondPromise = acceptor.prepare(SEQ, DEFAULT_PROPOSAL_ID);
 
         assertThat(firstPromise, is(expected));
         assertThat(secondPromise, is(expected));
@@ -94,7 +93,7 @@ public class PaxosAcceptorTest {
     // Prepare then accept
     @Test
     public void should_successfully_accept_after_prepare_with_same_id() {
-        acceptor.prepare(KEY, DEFAULT_PROPOSAL_ID);
+        acceptor.prepare(SEQ, DEFAULT_PROPOSAL_ID);
 
         BooleanPaxosResponse response = acceptor.accept(SEQ, DEFAULT_PROPOSAL);
 
@@ -103,7 +102,7 @@ public class PaxosAcceptorTest {
 
     @Test
     public void should_not_accept_after_prepare_with_higher_id() {
-        acceptor.prepare(KEY, HIGHER_PROPOSAL_ID);
+        acceptor.prepare(SEQ, HIGHER_PROPOSAL_ID);
 
         BooleanPaxosResponse response = acceptor.accept(SEQ, DEFAULT_PROPOSAL);
 
@@ -115,21 +114,21 @@ public class PaxosAcceptorTest {
     public void should_ack_prepare_after_accepting_lower_id() {
         PaxosPromise expected = PaxosPromise.accept(HIGHER_PROPOSAL_ID, DEFAULT_PROPOSAL_ID, DEFAULT_VALUE);
 
-        acceptor.prepare(KEY, DEFAULT_PROPOSAL_ID);
+        acceptor.prepare(SEQ, DEFAULT_PROPOSAL_ID);
         acceptor.accept(SEQ, DEFAULT_PROPOSAL);
 
-        PaxosPromise promise = acceptor.prepare(KEY, HIGHER_PROPOSAL_ID);
+        PaxosPromise promise = acceptor.prepare(SEQ, HIGHER_PROPOSAL_ID);
         assertEquals(expected, promise);
         assertThat(promise.ack, is(true));
     }
 
     @Test
     public void should_ack_prepare_after_accepting_same_id() {
-        acceptor.prepare(KEY, DEFAULT_PROPOSAL_ID);
+        acceptor.prepare(SEQ, DEFAULT_PROPOSAL_ID);
         acceptor.accept(SEQ, DEFAULT_PROPOSAL);
         PaxosPromise expected = PaxosPromise.accept(DEFAULT_PROPOSAL_ID, DEFAULT_PROPOSAL_ID, DEFAULT_PROPOSAL.getValue());
 
-        PaxosPromise promise = acceptor.prepare(KEY, DEFAULT_PROPOSAL_ID);
+        PaxosPromise promise = acceptor.prepare(SEQ, DEFAULT_PROPOSAL_ID);
 
         assertEquals(expected, promise);
     }
@@ -138,13 +137,13 @@ public class PaxosAcceptorTest {
     public void should_reject_prepare_after_accepting_higher_id() {
         PaxosPromise expected = PaxosPromise.reject(HIGHER_PROPOSAL_ID);
 
-        acceptor.prepare(KEY, HIGHER_PROPOSAL_ID);
+        acceptor.prepare(SEQ, HIGHER_PROPOSAL_ID);
 
         // Should the round in the PaxosValue match that in the ProposalId? If so, then this should trigger a failure.
         PaxosProposal higherProposal = new PaxosProposal(HIGHER_PROPOSAL_ID, DEFAULT_VALUE);
         acceptor.accept(SEQ, higherProposal);
 
-        PaxosPromise promise = acceptor.prepare(KEY, DEFAULT_PROPOSAL_ID);
+        PaxosPromise promise = acceptor.prepare(SEQ, DEFAULT_PROPOSAL_ID);
 
         assertEquals(expected, promise);
         assertThat(promise.ack, is(false));
@@ -165,7 +164,7 @@ public class PaxosAcceptorTest {
     public void should_get_latest_sequence_from_state_after_prepare_or_accept() {
         PaxosAcceptorImpl acceptorImpl = getPaxosAcceptorWithPreparedLog();
         long newSeq = LOGGED_SEQ + 1;
-        acceptorImpl.prepare(PaxosKey.fromSeq(newSeq), DEFAULT_PROPOSAL_ID);
+        acceptorImpl.prepare(newSeq, DEFAULT_PROPOSAL_ID);
 
         long latest = acceptorImpl.getLatestSequencePreparedOrAccepted();
 
@@ -179,7 +178,7 @@ public class PaxosAcceptorTest {
         acceptorImpl.log.truncate(LOGGED_SEQ);
         PaxosPromise expected = PaxosPromise.reject(DEFAULT_PROPOSAL_ID);
 
-        PaxosPromise promise = acceptorImpl.prepare(KEY, DEFAULT_PROPOSAL_ID);
+        PaxosPromise promise = acceptorImpl.prepare(SEQ, DEFAULT_PROPOSAL_ID);
         assertEquals(expected, promise);
     }
 
@@ -198,7 +197,7 @@ public class PaxosAcceptorTest {
         PaxosAcceptorImpl acceptorImpl = getPaxosAcceptorWithPreparedLog();
         PaxosPromise expected = PaxosPromise.reject(HIGHER_PROPOSAL_ID);
 
-        PaxosPromise promise = acceptorImpl.prepare(PaxosKey.fromSeq(LOGGED_SEQ), DEFAULT_PROPOSAL_ID);
+        PaxosPromise promise = acceptorImpl.prepare(LOGGED_SEQ, DEFAULT_PROPOSAL_ID);
 
         assertEquals(expected, promise);
     }

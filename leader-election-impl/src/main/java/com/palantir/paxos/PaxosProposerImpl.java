@@ -88,7 +88,7 @@ public class PaxosProposerImpl implements PaxosProposer {
         final PaxosProposalId proposalID = new PaxosProposalId(proposalNum.incrementAndGet(), uuid);
         PaxosValue toPropose = new PaxosValue(uuid, key, bytes);
 
-        final PaxosValue finalValue = prepareAndPromise(key, proposalID, toPropose);
+        final PaxosValue finalValue = prepareAndPromise(seq, proposalID, toPropose);
         collectAcceptancesForProposal(seq, proposalID, finalValue);
         broadcastLearnedValue(seq, finalValue);
 
@@ -99,14 +99,14 @@ public class PaxosProposerImpl implements PaxosProposer {
      * Executes phase one of paxos (see
      * http://en.wikipedia.org/wiki/Paxos_(computer_science)#Basic_Paxos)
      *
-     * @param key the key identifying this instance of Paxos
+     * @param seq the number identifying this instance of paxos
      * @param pid the id of the proposal currently being considered
      * @param value the default proposal value if no member of the quorum has already
      *        accepted an offer
      * @return the value accepted by the quorum
      * @throws PaxosRoundFailureException if quorum cannot be reached in this phase
      */
-    private PaxosValue prepareAndPromise(final PaxosKey key, final PaxosProposalId pid, PaxosValue value)
+    private PaxosValue prepareAndPromise(final long seq, final PaxosProposalId pid, PaxosValue value)
             throws PaxosRoundFailureException {
         List<PaxosPromise> receivedPromises = PaxosQuorumChecker.<PaxosAcceptor, PaxosPromise> collectQuorumResponses(
                 allAcceptors,
@@ -114,7 +114,7 @@ public class PaxosProposerImpl implements PaxosProposer {
                     @Override
                     @Nullable
                     public PaxosPromise apply(@Nullable PaxosAcceptor acceptor) {
-                        return acceptor.prepare(key, pid);
+                        return acceptor.prepare(seq, pid);
                     }
                 },
                 quorumSize,

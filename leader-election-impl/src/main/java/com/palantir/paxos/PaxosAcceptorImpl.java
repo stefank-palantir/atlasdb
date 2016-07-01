@@ -48,8 +48,7 @@ public class PaxosAcceptorImpl implements PaxosAcceptor {
     }
 
     @Override
-    public PaxosPromise prepare(PaxosKey key, PaxosProposalId pid) {
-        long seq = key.seq(); // TODO remove + refactor
+    public PaxosPromise prepare(long seq, PaxosProposalId pid) {
         try {
             checkLogIfNeeded(seq);
         } catch (Exception e) {

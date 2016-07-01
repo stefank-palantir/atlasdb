@@ -80,13 +80,13 @@ public class PaxosProposerTest {
 
     @Before
     public void setup() {
-        when(acceptingAcceptor.prepare(eq(KEY), any(PaxosProposalId.class))).thenReturn(successfulPromise());
+        when(acceptingAcceptor.prepare(eq(SEQ), any(PaxosProposalId.class))).thenReturn(successfulPromise());
         when(acceptingAcceptor.accept(eq(SEQ), any(PaxosProposal.class))).thenReturn(SUCCESSFUL_ACCEPTANCE);
 
-        when(rejectingAcceptor.prepare(eq(KEY), any(PaxosProposalId.class))).thenReturn(failedPromise());
+        when(rejectingAcceptor.prepare(eq(SEQ), any(PaxosProposalId.class))).thenReturn(failedPromise());
         when(rejectingAcceptor.accept(eq(SEQ), any(PaxosProposal.class))).thenReturn(FAILED_ACCEPTANCE);
 
-        when(promiseThenRejectAcceptor.prepare(eq(KEY), any(PaxosProposalId.class))).thenReturn(successfulPromise());
+        when(promiseThenRejectAcceptor.prepare(eq(SEQ), any(PaxosProposalId.class))).thenReturn(successfulPromise());
         when(promiseThenRejectAcceptor.accept(eq(SEQ), any(PaxosProposal.class))).thenReturn(FAILED_ACCEPTANCE);
     }
 
@@ -179,7 +179,7 @@ public class PaxosProposerTest {
     private PaxosAcceptor alreadyAccepted(byte[] otherValue) {
         PaxosAcceptor acceptor = mock(PaxosAcceptor.class);
 
-        when(acceptor.prepare(Matchers.any(PaxosKey.class), any(PaxosProposalId.class))).thenReturn(alreadyPromised(otherValue));
+        when(acceptor.prepare(Matchers.anyLong(), any(PaxosProposalId.class))).thenReturn(alreadyPromised(otherValue));
 
         when(acceptor.accept(Matchers.anyLong(), any(PaxosProposal.class))).thenReturn(SUCCESSFUL_ACCEPTANCE);
 
@@ -198,8 +198,8 @@ public class PaxosProposerTest {
     private PaxosAcceptor rejectSmallProposalIdsAcceptor(long lastPromisedNumber) {
         PaxosAcceptor acceptor = mock(PaxosAcceptor.class);
 
-        when(acceptor.prepare(Matchers.any(PaxosKey.class), argThat(hasProposalNumber(lessThan(lastPromisedNumber))))).thenReturn(failedPromise());
-        when(acceptor.prepare(Matchers.any(PaxosKey.class), argThat(hasProposalNumber(greaterThanOrEqualTo(lastPromisedNumber))))).thenReturn(successfulPromise());
+        when(acceptor.prepare(Matchers.anyLong(), argThat(hasProposalNumber(lessThan(lastPromisedNumber))))).thenReturn(failedPromise());
+        when(acceptor.prepare(Matchers.anyLong(), argThat(hasProposalNumber(greaterThanOrEqualTo(lastPromisedNumber))))).thenReturn(successfulPromise());
 
         when(acceptor.accept(Matchers.anyLong(), any(PaxosProposal.class))).thenReturn(SUCCESSFUL_ACCEPTANCE);
 
