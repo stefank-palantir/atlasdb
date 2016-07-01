@@ -35,10 +35,10 @@ public interface PaxosAcceptor {
      * @return a paxos promise not to accept lower numbered proposals
      */
     @POST
-    @Path("prepare/{seq}")
+    @Path("prepare/{key}")
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
-    public PaxosPromise prepare(@PathParam("seq") long seq, PaxosProposalId pid);
+    public PaxosPromise prepare(@PathParam("key") PaxosKey key, PaxosProposalId pid);
 
     /**
      * The acceptor decides whether to accept or reject a given proposal.
