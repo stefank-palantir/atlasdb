@@ -83,7 +83,7 @@ public class PaxosLearnerImpl implements PaxosLearner {
         PaxosValue greatestLearnedValue = getGreatestLearnedValue();
         long greatestSeq = -1L;
         if (greatestLearnedValue != null) {
-            greatestSeq = greatestLearnedValue.key.seq();
+            greatestSeq = greatestLearnedValue.getRound();
         }
 
         Collection<PaxosValue> values = new ArrayList<PaxosValue>();

@@ -39,6 +39,7 @@ import javax.annotation.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.base.Charsets;
 import com.google.common.base.Defaults;
 import com.google.common.base.Function;
 import com.google.common.base.Optional;
@@ -201,7 +202,7 @@ public class PaxosLeaderElectionService implements PingableLeader, LeaderElectio
         }
 
         // check leader cache
-        String uuid = value.getLeaderUUID();
+        String uuid = new String(value.getData(), Charsets.UTF_8);
         if (uuidToServiceCache.containsKey(uuid)) {
             return Optional.of(uuidToServiceCache.get(uuid));
         }
@@ -350,7 +351,7 @@ public class PaxosLeaderElectionService implements PingableLeader, LeaderElectio
 
             leaderLog.info("Proposing leadership with sequence number " + seq);
             PaxosKey key = ImmutablePaxosKey.builder().seq(seq).build();
-            paxosKeyValueStore.propose(key, null);
+            paxosKeyValueStore.propose(key, getUUID().getBytes(Charsets.UTF_8));
         } catch (PaxosRoundFailureException e) {
             // We have failed trying to become the leader.
             leaderLog.warn("Leadership was not gained", e);
@@ -584,7 +585,11 @@ public class PaxosLeaderElectionService implements PingableLeader, LeaderElectio
     }
 
     private boolean isLastConfirmedLeader(PaxosValue value) {
-        return value != null ? value.getLeaderUUID().equals(proposer.getUUID()) : false;
+        if (value == null) {
+            return false;
+        }
+        String valueLeaderUuid = new String(value.getData(), Charsets.UTF_8);
+        return valueLeaderUuid.equals(proposer.getUUID());
     }
 
     /**

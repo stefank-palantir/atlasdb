@@ -15,6 +15,9 @@
  */
 package com.palantir.paxos;
 
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
@@ -155,10 +158,11 @@ public class PaxosConsensusFastTest {
         String leaderUUID = "I-AM-DA-LEADER";
         String dir = "log-test";
         long seq = 0;
+        byte[] proposedData = new byte[]{1, 2, 3, 4};
 
         // write to log
         PaxosStateLog<PaxosValue> log = new PaxosStateLogImpl<PaxosValue>(dir);
-        log.writeRound(seq, new PaxosValue(leaderUUID, PaxosKey.fromSeq(0), null));
+        log.writeRound(seq, new PaxosValue(leaderUUID, PaxosKey.fromSeq(0), proposedData));
 
         // read back from log
         try {
@@ -166,6 +170,7 @@ public class PaxosConsensusFastTest {
             assertNotNull(bytes);
             PaxosValue p = PaxosValue.BYTES_HYDRATOR.hydrateFromBytes(bytes);
             assertTrue(p.getLeaderUUID().equals(leaderUUID));
+            assertThat(p.getData(), equalTo(proposedData));
         } catch (IOException e1) {
             fail("IO exception when reading log");
         }
