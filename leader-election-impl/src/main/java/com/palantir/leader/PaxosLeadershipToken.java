@@ -41,7 +41,7 @@ public class PaxosLeadershipToken implements LeadershipToken {
             return true;
         }
         return value != null && v != null
-                && (new CompareToBuilder().append(value.getProposerUUID(), v.getProposerUUID())
+                && (new CompareToBuilder()
                 .append(value.getRound(), v.getRound())
                 .append(value.getData(), v.getData())
                 .toComparison() == 0);

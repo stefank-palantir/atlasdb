@@ -187,7 +187,7 @@ public class PaxosProposerTest {
     }
 
     private PaxosPromise alreadyPromised(byte[] otherValue) {
-        return PaxosPromise.create(true, PROPOSAL_ID, ACCEPTED_PROPOSAL_ID, new PaxosValue("foo", PaxosKey.fromSeq(SEQ), otherValue));
+        return PaxosPromise.create(true, PROPOSAL_ID, ACCEPTED_PROPOSAL_ID, new PaxosValue(PaxosKey.fromSeq(SEQ), otherValue));
     }
 
     private PaxosProposer createProposerWithAcceptors(ImmutableList<PaxosAcceptor> acceptors) {
@@ -217,7 +217,7 @@ public class PaxosProposerTest {
     }
 
     private PaxosValue paxosValueFor(PaxosProposer proposer) {
-        return new PaxosValue(proposer.getUUID(), PaxosKey.fromSeq(SEQ), VALUE);
+        return new PaxosValue(PaxosKey.fromSeq(SEQ), VALUE);
     }
 
     private PaxosPromise failedPromise() {

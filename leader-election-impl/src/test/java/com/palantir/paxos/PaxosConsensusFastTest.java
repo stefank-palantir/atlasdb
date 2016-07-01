@@ -155,21 +155,19 @@ public class PaxosConsensusFastTest {
 
     @Test
     public void simpleLogTest() {
-        String leaderUUID = "I-AM-DA-LEADER";
         String dir = "log-test";
         long seq = 0;
         byte[] proposedData = new byte[]{1, 2, 3, 4};
 
         // write to log
         PaxosStateLog<PaxosValue> log = new PaxosStateLogImpl<PaxosValue>(dir);
-        log.writeRound(seq, new PaxosValue(leaderUUID, PaxosKey.fromSeq(0), proposedData));
+        log.writeRound(seq, new PaxosValue(PaxosKey.fromSeq(0), proposedData));
 
         // read back from log
         try {
             byte[] bytes = log.readRound(seq);
             assertNotNull(bytes);
             PaxosValue p = PaxosValue.BYTES_HYDRATOR.hydrateFromBytes(bytes);
-            assertTrue(p.getProposerUUID().equals(leaderUUID));
             assertThat(p.getData(), equalTo(proposedData));
         } catch (IOException e1) {
             fail("IO exception when reading log");
