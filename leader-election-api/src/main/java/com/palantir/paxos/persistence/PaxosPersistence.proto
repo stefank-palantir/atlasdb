@@ -7,7 +7,7 @@ message PaxosHeader {
 message PaxosValue {
     optional bytes bytes = 1;
     optional int64 seq = 2;
-    optional string leaderUUID = 3;
+    optional string proposerUUID = 3;
 }
 
 message PaxosAcceptorState {

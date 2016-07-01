@@ -169,7 +169,7 @@ public class PaxosConsensusFastTest {
             byte[] bytes = log.readRound(seq);
             assertNotNull(bytes);
             PaxosValue p = PaxosValue.BYTES_HYDRATOR.hydrateFromBytes(bytes);
-            assertTrue(p.getLeaderUUID().equals(leaderUUID));
+            assertTrue(p.getProposerUUID().equals(leaderUUID));
             assertThat(p.getData(), equalTo(proposedData));
         } catch (IOException e1) {
             fail("IO exception when reading log");
