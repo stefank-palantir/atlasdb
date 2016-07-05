@@ -20,6 +20,7 @@ import java.util.Arrays;
 
 import javax.annotation.Nullable;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.Defaults;
@@ -52,14 +53,15 @@ public class PaxosValue implements Persistable, Versionable, Serializable {
         }
     };
 
+    @JsonCreator
     public PaxosValue(@JsonProperty("round") PaxosKey key,
                       @JsonProperty("data") @Nullable byte[] data) {
         this.key = key;
         this.data = data;
     }
 
-    public long getRound() {
-        return key.seq();
+    public PaxosKey getRound() {
+        return key;
     }
 
     public byte[] getData() {

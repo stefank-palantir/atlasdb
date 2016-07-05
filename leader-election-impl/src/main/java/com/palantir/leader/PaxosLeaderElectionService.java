@@ -344,7 +344,7 @@ public class PaxosLeaderElectionService implements PingableLeader, LeaderElectio
 
             long seq;
             if (value != null) {
-                seq = value.getRound() + 1;
+                seq = value.getRound().seq() + 1;
             } else {
                 seq = Defaults.defaultValue(long.class);
             }
@@ -527,7 +527,7 @@ public class PaxosLeaderElectionService implements PingableLeader, LeaderElectio
         Preconditions.checkNotNull(token);
 
         final PaxosValue mostRecentValue = knowledge.getGreatestLearnedValue();
-        final long seq = mostRecentValue.getRound();
+        final long seq = mostRecentValue.getRound().seq();
         final LeadershipToken mostRecentToken = genTokenFromValue(mostRecentValue);
 
         // check if node thinks it is leader
@@ -599,7 +599,7 @@ public class PaxosLeaderElectionService implements PingableLeader, LeaderElectio
      * @returns true if new state was learned, otherwise false
      */
     public boolean updateLearnedStateFromPeers(PaxosValue greatestLearned) {
-        final long nextToLearnSeq = greatestLearned != null ? greatestLearned.getRound() + 1 : Defaults.defaultValue(long.class);
+        final long nextToLearnSeq = greatestLearned != null ? greatestLearned.getRound().seq() + 1 : Defaults.defaultValue(long.class);
         List<PaxosUpdate> updates = PaxosQuorumChecker.<PaxosLearner, PaxosUpdate> collectQuorumResponses(
                 learners,
                 new Function<PaxosLearner, PaxosUpdate>() {
@@ -619,9 +619,9 @@ public class PaxosLeaderElectionService implements PingableLeader, LeaderElectio
         for (PaxosUpdate update : updates) {
             ImmutableCollection<PaxosValue> values = update.getValues();
             for (PaxosValue value : values) {
-                PaxosValue currentLearnedValue = knowledge.getLearnedValue(value.getRound());
+                PaxosValue currentLearnedValue = knowledge.getLearnedValue(value.getRound().seq());
                 if (currentLearnedValue == null) {
-                    knowledge.learn(value.getRound(), value);
+                    knowledge.learn(value.getRound().seq(), value);
                     learned = true;
                 }
             }

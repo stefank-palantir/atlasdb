@@ -20,6 +20,7 @@ import java.io.Serializable;
 
 import org.immutables.value.Value;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
@@ -32,6 +33,7 @@ public abstract class PaxosKey implements Comparable<PaxosKey>, Serializable {
         return ((Long) seq()).compareTo(o.seq());
     }
 
+    @JsonProperty("seq")
     public abstract long seq();
 
     public static PaxosKey fromSeq(long seq) {

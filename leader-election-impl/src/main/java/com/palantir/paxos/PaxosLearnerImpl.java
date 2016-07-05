@@ -40,7 +40,7 @@ public class PaxosLearnerImpl implements PaxosLearner {
         byte[] greatestValidValue = PaxosStateLogs.getGreatestValidLogEntry(log);
         if (greatestValidValue != null) {
             PaxosValue value = PaxosValue.BYTES_HYDRATOR.hydrateFromBytes(greatestValidValue);
-            state.put(value.getRound(), value);
+            state.put(value.getRound().seq(), value);
         }
 
         return new PaxosLearnerImpl(state, log);
@@ -83,7 +83,7 @@ public class PaxosLearnerImpl implements PaxosLearner {
         PaxosValue greatestLearnedValue = getGreatestLearnedValue();
         long greatestSeq = -1L;
         if (greatestLearnedValue != null) {
-            greatestSeq = greatestLearnedValue.getRound();
+            greatestSeq = greatestLearnedValue.getRound().seq();
         }
 
         Collection<PaxosValue> values = new ArrayList<PaxosValue>();
