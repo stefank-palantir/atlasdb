@@ -53,7 +53,6 @@ import com.palantir.common.base.Throwables;
 import com.palantir.paxos.ImmutablePaxosKey;
 import com.palantir.paxos.PaxosAcceptor;
 import com.palantir.paxos.PaxosKey;
-import com.palantir.paxos.PaxosKeyValueStore;
 import com.palantir.paxos.PaxosLearner;
 import com.palantir.paxos.PaxosProposer;
 import com.palantir.paxos.PaxosQuorumChecker;
@@ -86,8 +85,6 @@ public class PaxosLeaderElectionService implements PingableLeader, LeaderElectio
     final long randomWaitBeforeProposingLeadership;
     final long leaderPingResponseWaitMs;
 
-    private final PaxosKeyValueStore paxosKeyValueStore;
-
     final ExecutorService executor;
 
     final ConcurrentMap<String, PingableLeader> uuidToServiceCache = Maps.newConcurrentMap();
@@ -112,14 +109,12 @@ public class PaxosLeaderElectionService implements PingableLeader, LeaderElectio
         this.randomWaitBeforeProposingLeadership = randomWaitBeforeProposingLeadership;
         this.leaderPingResponseWaitMs = leaderPingResponseWaitMs;
         lock = new ReentrantLock();
-
-        this.paxosKeyValueStore = new PaxosKeyValueStore(proposer, knowledge);
     }
 
     @Override
     public LeadershipToken blockOnBecomingLeader() throws InterruptedException {
         for (;;) {
-            PaxosValue greatestLearned = paxosKeyValueStore.getGreatestLearnedValue();
+            PaxosValue greatestLearned = knowledge.getGreatestLearnedValue();
             LeadershipToken token = genTokenFromValue(greatestLearned);
 
             if (isLastConfirmedLeader(greatestLearned)) {
@@ -333,7 +328,7 @@ public class PaxosLeaderElectionService implements PingableLeader, LeaderElectio
     private void proposeLeadership(LeadershipToken token) {
         lock.lock();
         try {
-            PaxosValue value = paxosKeyValueStore.getGreatestLearnedValue();
+            PaxosValue value = knowledge.getGreatestLearnedValue();
 
             LeadershipToken expectedToken = genTokenFromValue(value);
             if (!expectedToken.sameAs(token)) {
@@ -351,7 +346,7 @@ public class PaxosLeaderElectionService implements PingableLeader, LeaderElectio
 
             leaderLog.info("Proposing leadership with sequence number " + seq);
             PaxosKey key = ImmutablePaxosKey.builder().seq(seq).build();
-            paxosKeyValueStore.propose(key, getUUID().getBytes(Charsets.UTF_8));
+            proposer.propose(key, getUUID().getBytes(Charsets.UTF_8));
         } catch (PaxosRoundFailureException e) {
             // We have failed trying to become the leader.
             leaderLog.warn("Leadership was not gained", e);
@@ -388,7 +383,6 @@ public class PaxosLeaderElectionService implements PingableLeader, LeaderElectio
         public void fail() {
             failed = true;
         }
-
         public void becomeReadable() {
             populationLatch.countDown();
         }
@@ -458,16 +452,13 @@ public class PaxosLeaderElectionService implements PingableLeader, LeaderElectio
     private static class StillLeadingCallBatch {
         public final boolean thisThreadOwnsBatch;
         public final StillLeadingCall batch;
-
         public StillLeadingCallBatch(boolean thisThreadOwnsBatch,
                                      StillLeadingCall batch) {
             this.thisThreadOwnsBatch = thisThreadOwnsBatch;
             this.batch = batch;
         }
     }
-
     private final static int MAX_INSTALL_BATCH_ATTEMPTS = 5;
-
     private StillLeadingCallBatch getStillLeadingCallBatch(LeadershipToken token) {
         boolean installedNewBatch = false;
         boolean joinedBatch = false;
