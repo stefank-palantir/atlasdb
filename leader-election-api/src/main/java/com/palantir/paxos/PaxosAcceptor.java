@@ -18,39 +18,35 @@ package com.palantir.paxos;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 
 @Path("/acceptor")
 public interface PaxosAcceptor {
-    public final static long NO_LOG_ENTRY = -1L;
+    long NO_LOG_ENTRY = -1L;
 
     /**
      * The acceptor prepares for a given proposal by either promising not to accept future proposals
      * or rejecting the proposal.
      *
-     *
-     * @param prepareRequest@return a paxos promise not to accept lower numbered proposals
+     * @return a paxos promise not to accept lower numbered proposals
      */
     @POST
     @Path("prepare")
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
-    public PaxosPromise prepare(PrepareRequest prepareRequest);
+    PaxosPromise prepare(PrepareRequest prepareRequest);
 
     /**
      * The acceptor decides whether to accept or reject a given proposal.
      *
-     * @param seq the number identifying this instance of paxos
-     * @param proposal the proposal in question
      * @return a paxos message indicating if the proposal was accepted or rejected
      */
     @POST
-    @Path("accept/{seq}")
+    @Path("accept")
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
-    public BooleanPaxosResponse accept(@PathParam("seq") long seq, PaxosProposal proposal);
+    BooleanPaxosResponse accept(AcceptRequest acceptRequest);
 
     /**
      * Gets the sequence number of the acceptor's most recent known round.
@@ -61,5 +57,5 @@ public interface PaxosAcceptor {
     @POST // This is marked as a POST because we cannot accept stale or cached results for this method.
     @Path("latest-sequence-prepared-or-accepted")
     @Produces(MediaType.APPLICATION_JSON)
-    public long getLatestSequencePreparedOrAccepted();
+    long getLatestSequencePreparedOrAccepted();
 }

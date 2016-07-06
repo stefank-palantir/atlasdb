@@ -41,7 +41,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
-import org.mockito.Matchers;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
@@ -82,14 +81,14 @@ public class PaxosProposerTest {
 
     @Before
     public void setup() {
-        when(acceptingAcceptor.prepare(argThat(hasKey(KEY)))).thenReturn(successfulPromise());
-        when(acceptingAcceptor.accept(eq(SEQ), any(PaxosProposal.class))).thenReturn(SUCCESSFUL_ACCEPTANCE);
+        when(acceptingAcceptor.prepare(argThat(isPrepareRequestWithKey(KEY)))).thenReturn(successfulPromise());
+        when(acceptingAcceptor.accept(argThat(isAcceptRequestWithKey(KEY)))).thenReturn(SUCCESSFUL_ACCEPTANCE);
 
-        when(rejectingAcceptor.prepare(argThat(hasKey(KEY)))).thenReturn(failedPromise());
-        when(rejectingAcceptor.accept(eq(SEQ), any(PaxosProposal.class))).thenReturn(FAILED_ACCEPTANCE);
+        when(rejectingAcceptor.prepare(argThat(isPrepareRequestWithKey(KEY)))).thenReturn(failedPromise());
+        when(rejectingAcceptor.accept(argThat(isAcceptRequestWithKey(KEY)))).thenReturn(FAILED_ACCEPTANCE);
 
-        when(promiseThenRejectAcceptor.prepare(argThat(hasKey(KEY)))).thenReturn(successfulPromise());
-        when(promiseThenRejectAcceptor.accept(eq(SEQ), any(PaxosProposal.class))).thenReturn(FAILED_ACCEPTANCE);
+        when(promiseThenRejectAcceptor.prepare(argThat(isPrepareRequestWithKey(KEY)))).thenReturn(successfulPromise());
+        when(promiseThenRejectAcceptor.accept(argThat(isAcceptRequestWithKey(KEY)))).thenReturn(FAILED_ACCEPTANCE);
     }
 
     @Test public void
@@ -183,7 +182,7 @@ public class PaxosProposerTest {
 
         when(acceptor.prepare(any(PrepareRequest.class))).thenReturn(alreadyPromised(otherValue));
 
-        when(acceptor.accept(Matchers.anyLong(), any(PaxosProposal.class))).thenReturn(SUCCESSFUL_ACCEPTANCE);
+        when(acceptor.accept(any(AcceptRequest.class))).thenReturn(SUCCESSFUL_ACCEPTANCE);
 
         return acceptor;
     }
@@ -203,16 +202,31 @@ public class PaxosProposerTest {
         when(acceptor.prepare(argThat(hasProposalNumber(lessThan(lastPromisedNumber))))).thenReturn(failedPromise());
         when(acceptor.prepare(argThat(hasProposalNumber(greaterThanOrEqualTo(lastPromisedNumber))))).thenReturn(successfulPromise());
 
-        when(acceptor.accept(Matchers.anyLong(), any(PaxosProposal.class))).thenReturn(SUCCESSFUL_ACCEPTANCE);
+        when(acceptor.accept(any(AcceptRequest.class))).thenReturn(SUCCESSFUL_ACCEPTANCE);
 
         return acceptor;
     }
 
-    private Matcher<PrepareRequest> hasKey(final PaxosKey key) {
+    private Matcher<PrepareRequest> isPrepareRequestWithKey(final PaxosKey key) {
         return new BaseMatcher<PrepareRequest>() {
             @Override
             public boolean matches(Object item) {
                 final PrepareRequest request = (PrepareRequest) item;
+                return request.getKey().equals(key);
+            }
+
+            @Override
+            public void describeTo(Description description) {
+                description.appendText("getKey should return ").appendValue(key);
+            }
+        };
+    }
+
+    private Matcher<AcceptRequest> isAcceptRequestWithKey(final PaxosKey key) {
+        return new BaseMatcher<AcceptRequest>() {
+            @Override
+            public boolean matches(Object item) {
+                final AcceptRequest request = (AcceptRequest) item;
                 return request.getKey().equals(key);
             }
 

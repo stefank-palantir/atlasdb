@@ -90,7 +90,10 @@ public class PaxosAcceptorImpl implements PaxosAcceptor {
     }
 
     @Override
-    public BooleanPaxosResponse accept(long seq, PaxosProposal proposal) {
+    public BooleanPaxosResponse accept(final AcceptRequest acceptRequest) {
+        long seq = acceptRequest.getKey().seq();
+        PaxosProposal proposal = acceptRequest.getProposal();
+
         try {
             checkLogIfNeeded(seq);
         } catch (Exception e) {

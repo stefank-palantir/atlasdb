@@ -24,6 +24,7 @@ import org.junit.Test;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.palantir.atlasdb.http.TextDelegateDecoder;
 import com.palantir.leader.PingableLeader;
+import com.palantir.paxos.AcceptRequest;
 import com.palantir.paxos.PaxosAcceptor;
 import com.palantir.paxos.PaxosAcceptorImpl;
 import com.palantir.paxos.PaxosKey;
@@ -109,7 +110,7 @@ public class LeaderRemotingTest {
                 .contract(new JAXRSContract())
                 .target(PaxosAcceptor.class, acceptor.baseUri().toString());
 
-        accept.accept(0, paxosProposal);
+        accept.accept(AcceptRequest.from(PaxosKey.fromSeq(0), paxosProposal));
         accept.getLatestSequencePreparedOrAccepted();
         accept.prepare(PrepareRequest.from(PaxosKey.fromSeq(0), id));
         accept.prepare(PrepareRequest.from(PaxosKey.fromSeq(1), id));
