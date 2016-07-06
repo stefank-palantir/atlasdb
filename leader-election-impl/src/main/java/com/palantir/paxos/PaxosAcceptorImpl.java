@@ -48,9 +48,9 @@ public class PaxosAcceptorImpl implements PaxosAcceptor {
     }
 
     @Override
-    public PaxosPromise prepare(PaxosRequest paxosRequest) {
-        PaxosKey key = paxosRequest.getSeq();
-        PaxosProposalId pid = paxosRequest.getPid();
+    public PaxosPromise prepare(PrepareRequest prepareRequest) {
+        PaxosKey key = prepareRequest.getKey();
+        PaxosProposalId pid = prepareRequest.getPid();
 
         try {
             checkLogIfNeeded(key.seq());
@@ -60,7 +60,7 @@ public class PaxosAcceptorImpl implements PaxosAcceptor {
         }
 
         for (;;) {
-            PaxosAcceptorState oldState = state.get(key);
+            PaxosAcceptorState oldState = state.get(key.seq());
 
             if (oldState != null && pid.compareTo(oldState.lastPromisedId) < 0) {
                 return PaxosPromise.reject(oldState.lastPromisedId);

@@ -99,7 +99,7 @@ public class PaxosProposerImpl implements PaxosProposer {
      * Executes phase one of paxos (see
      * http://en.wikipedia.org/wiki/Paxos_(computer_science)#Basic_Paxos)
      *
-     * @param seq the number identifying this instance of paxos
+     * @param key the PaxosKey identifying this instance of paxos
      * @param pid the id of the proposal currently being considered
      * @param value the default proposal value if no member of the quorum has already
      *        accepted an offer
@@ -114,7 +114,7 @@ public class PaxosProposerImpl implements PaxosProposer {
                     @Override
                     @Nullable
                     public PaxosPromise apply(@Nullable PaxosAcceptor acceptor) {
-                        return acceptor.prepare(new PaxosRequest(key, pid));
+                        return acceptor.prepare(PrepareRequest.from(key, pid));
                     }
                 },
                 quorumSize,

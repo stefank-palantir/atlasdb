@@ -26,11 +26,13 @@ import com.palantir.atlasdb.http.TextDelegateDecoder;
 import com.palantir.leader.PingableLeader;
 import com.palantir.paxos.PaxosAcceptor;
 import com.palantir.paxos.PaxosAcceptorImpl;
+import com.palantir.paxos.PaxosKey;
 import com.palantir.paxos.PaxosLearner;
 import com.palantir.paxos.PaxosLearnerImpl;
 import com.palantir.paxos.PaxosProposal;
 import com.palantir.paxos.PaxosProposalId;
 import com.palantir.paxos.PaxosValue;
+import com.palantir.paxos.PrepareRequest;
 
 import feign.Feign;
 import feign.jackson.JacksonDecoder;
@@ -76,7 +78,7 @@ public class LeaderRemotingTest {
     public void testLearn() throws IOException {
         ObjectMapper mapper = new ObjectMapper();
 
-        PaxosValue value = new PaxosValue("asdfasdfsa", 0, new byte[] {0, 1, 2});
+        PaxosValue value = new PaxosValue(PaxosKey.fromSeq(0), new byte[] {0, 1, 2});
 
         PaxosLearner learn = Feign.builder()
                 .decoder(new TextDelegateDecoder(new JacksonDecoder()))
@@ -98,7 +100,7 @@ public class LeaderRemotingTest {
         ObjectMapper mapper = new ObjectMapper();
 
         PaxosProposalId id = new PaxosProposalId(123123, UUID.randomUUID().toString());
-        PaxosProposal paxosProposal = new PaxosProposal(id, new PaxosValue(id.getProposerUUID(), 0, new byte[] {0, 1, 2, 4, 1}));
+        PaxosProposal paxosProposal = new PaxosProposal(id, new PaxosValue(PaxosKey.fromSeq(0), new byte[] {0, 1, 2, 4, 1}));
 
 
         PaxosAcceptor accept = Feign.builder()
@@ -109,8 +111,8 @@ public class LeaderRemotingTest {
 
         accept.accept(0, paxosProposal);
         accept.getLatestSequencePreparedOrAccepted();
-        accept.prepare(0, id);
-        accept.prepare(1, id);
+        accept.prepare(PrepareRequest.from(PaxosKey.fromSeq(0), id));
+        accept.prepare(PrepareRequest.from(PaxosKey.fromSeq(1), id));
     }
 
 }

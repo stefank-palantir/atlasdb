@@ -31,13 +31,13 @@ public interface PaxosAcceptor {
      * or rejecting the proposal.
      *
      *
-     * @param paxosRequest@return a paxos promise not to accept lower numbered proposals
+     * @param prepareRequest@return a paxos promise not to accept lower numbered proposals
      */
     @POST
-    @Path("prepare/{seq}")
+    @Path("prepare")
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
-    public PaxosPromise prepare(PaxosRequest paxosRequest);
+    public PaxosPromise prepare(PrepareRequest prepareRequest);
 
     /**
      * The acceptor decides whether to accept or reject a given proposal.

@@ -32,6 +32,8 @@ import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import org.hamcrest.BaseMatcher;
+import org.hamcrest.Description;
 import org.hamcrest.FeatureMatcher;
 import org.hamcrest.Matcher;
 import org.junit.Before;
@@ -80,13 +82,13 @@ public class PaxosProposerTest {
 
     @Before
     public void setup() {
-        when(acceptingAcceptor.prepare(new PaxosRequest(eq(KEY), any(PaxosProposalId.class)))).thenReturn(successfulPromise());
+        when(acceptingAcceptor.prepare(argThat(hasKey(KEY)))).thenReturn(successfulPromise());
         when(acceptingAcceptor.accept(eq(SEQ), any(PaxosProposal.class))).thenReturn(SUCCESSFUL_ACCEPTANCE);
 
-        when(rejectingAcceptor.prepare(new PaxosRequest(eq(KEY), any(PaxosProposalId.class)))).thenReturn(failedPromise());
+        when(rejectingAcceptor.prepare(argThat(hasKey(KEY)))).thenReturn(failedPromise());
         when(rejectingAcceptor.accept(eq(SEQ), any(PaxosProposal.class))).thenReturn(FAILED_ACCEPTANCE);
 
-        when(promiseThenRejectAcceptor.prepare(new PaxosRequest(eq(KEY), any(PaxosProposalId.class)))).thenReturn(successfulPromise());
+        when(promiseThenRejectAcceptor.prepare(argThat(hasKey(KEY)))).thenReturn(successfulPromise());
         when(promiseThenRejectAcceptor.accept(eq(SEQ), any(PaxosProposal.class))).thenReturn(FAILED_ACCEPTANCE);
     }
 
@@ -179,7 +181,7 @@ public class PaxosProposerTest {
     private PaxosAcceptor alreadyAccepted(byte[] otherValue) {
         PaxosAcceptor acceptor = mock(PaxosAcceptor.class);
 
-        when(acceptor.prepare(any(PaxosRequest.class))).thenReturn(alreadyPromised(otherValue));
+        when(acceptor.prepare(any(PrepareRequest.class))).thenReturn(alreadyPromised(otherValue));
 
         when(acceptor.accept(Matchers.anyLong(), any(PaxosProposal.class))).thenReturn(SUCCESSFUL_ACCEPTANCE);
 
@@ -198,20 +200,35 @@ public class PaxosProposerTest {
     private PaxosAcceptor rejectSmallProposalIdsAcceptor(long lastPromisedNumber) {
         PaxosAcceptor acceptor = mock(PaxosAcceptor.class);
 
-        when(acceptor.prepare(new PaxosRequest(Matchers.any(PaxosKey.class), argThat(hasProposalNumber(lessThan(lastPromisedNumber)))))).thenReturn(failedPromise());
-        when(acceptor.prepare(new PaxosRequest(Matchers.any(PaxosKey.class), argThat(hasProposalNumber(greaterThanOrEqualTo(lastPromisedNumber)))))).thenReturn(successfulPromise());
+        when(acceptor.prepare(argThat(hasProposalNumber(lessThan(lastPromisedNumber))))).thenReturn(failedPromise());
+        when(acceptor.prepare(argThat(hasProposalNumber(greaterThanOrEqualTo(lastPromisedNumber))))).thenReturn(successfulPromise());
 
         when(acceptor.accept(Matchers.anyLong(), any(PaxosProposal.class))).thenReturn(SUCCESSFUL_ACCEPTANCE);
 
         return acceptor;
     }
 
-    private Matcher<PaxosProposalId> hasProposalNumber(Matcher<Long> subMatcher) {
-        return new FeatureMatcher<PaxosProposalId, Long>(subMatcher, "proposal number", "proposal number") {
+    private Matcher<PrepareRequest> hasKey(final PaxosKey key) {
+        return new BaseMatcher<PrepareRequest>() {
+            @Override
+            public boolean matches(Object item) {
+                final PrepareRequest request = (PrepareRequest) item;
+                return request.getKey().equals(key);
+            }
 
             @Override
-            protected Long featureValueOf(PaxosProposalId actual) {
-                return actual.getNumber();
+            public void describeTo(Description description) {
+                description.appendText("getKey should return ").appendValue(key);
+            }
+        };
+    }
+
+    private Matcher<PrepareRequest> hasProposalNumber(Matcher<Long> subMatcher) {
+        return new FeatureMatcher<PrepareRequest, Long>(subMatcher, "proposal number", "proposal number") {
+
+            @Override
+            protected Long featureValueOf(PrepareRequest actual) {
+                return actual.getPid().getNumber();
             }
         };
     }

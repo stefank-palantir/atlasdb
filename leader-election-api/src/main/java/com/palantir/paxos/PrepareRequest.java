@@ -16,24 +16,21 @@
 
 package com.palantir.paxos;
 
-public class PaxosRequest {
-    private final PaxosKey seq;
-    private final PaxosProposalId pid;
+import org.immutables.value.Value;
 
-    /**
-     * @param seq the number identifying this instance of paxos
-     * @param pid the proposal to prepare for
-     */
-    public PaxosRequest(PaxosKey seq, PaxosProposalId pid) {
-        this.seq = seq;
-        this.pid = pid;
-    }
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
-    public PaxosKey getSeq() {
-        return seq;
-    }
+@JsonSerialize(as = ImmutablePrepareRequest.class)
+@JsonDeserialize(as = ImmutablePrepareRequest.class)
+@Value.Immutable
+public abstract class PrepareRequest {
+    public abstract PaxosKey getKey();
 
-    public PaxosProposalId getPid() {
-        return pid;
+    public abstract PaxosProposalId getPid();
+
+    public static PrepareRequest from(PaxosKey key, PaxosProposalId pid) {
+        return ImmutablePrepareRequest.builder().key(key).pid(pid).build();
+
     }
 }
