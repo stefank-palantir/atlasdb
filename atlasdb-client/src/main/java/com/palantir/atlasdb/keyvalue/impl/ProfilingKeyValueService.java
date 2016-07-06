@@ -408,11 +408,6 @@ public class ProfilingKeyValueService implements KeyValueService {
     }
 
     @Override
-    public void teardown() {
-        close();
-    }
-
-    @Override
     public void truncateTable(TableReference tableRef) {
         if (log.isTraceEnabled()) {
             Stopwatch stopwatch = Stopwatch.createStarted();

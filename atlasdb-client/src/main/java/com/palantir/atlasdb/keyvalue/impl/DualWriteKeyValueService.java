@@ -60,11 +60,6 @@ public class DualWriteKeyValueService implements KeyValueService {
     }
 
     @Override
-    public void teardown() {
-        close();
-    }
-
-    @Override
     public Collection<? extends KeyValueService> getDelegates() {
         return ImmutableList.of(delegate1, delegate2);
     }

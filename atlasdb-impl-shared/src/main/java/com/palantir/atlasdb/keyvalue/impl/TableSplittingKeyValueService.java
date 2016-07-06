@@ -310,11 +310,6 @@ public class TableSplittingKeyValueService implements KeyValueService {
     }
 
     @Override
-    public void teardown() {
-        close();
-    }
-
-    @Override
     public void truncateTable(TableReference tableRef){
         getDelegate(tableRef).truncateTable(tableRef);
     }

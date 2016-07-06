@@ -824,19 +824,6 @@ public class PartitionedKeyValueService extends PartitionMapProvider implements 
     }
 
     @Override
-    public void teardown() {
-        runWithPartitionMap(new Function<DynamicPartitionMap, Void>() {
-            @Override
-            public Void apply(@Nullable DynamicPartitionMap input) {
-                for (KeyValueService kvs : input.getDelegates()) {
-                    kvs.close();
-                }
-                return null;
-            }
-        });
-    }
-
-    @Override
     public Collection<? extends KeyValueService> getDelegates() {
         return runWithPartitionMapRetryable(new Function<DynamicPartitionMap, Collection<? extends KeyValueService>>() {
             @Override
