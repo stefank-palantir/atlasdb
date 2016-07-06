@@ -27,9 +27,15 @@ generated_testSrc/
 .factorypath
 out/
 atlasdb-cli/var/data/
+testlogs/
 
 # Emacs temp files
 *~
 
 # Rocksdb data
 var/data/rocksdb
+
+# floo stuff
+.floo
+.flooignore
+
