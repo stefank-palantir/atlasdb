@@ -54,7 +54,7 @@ public abstract class ForwardingKeyValueService extends ForwardingObject impleme
 
     @Override
     public void teardown() {
-        delegate().teardown();
+        close();
     }
 
     @Override

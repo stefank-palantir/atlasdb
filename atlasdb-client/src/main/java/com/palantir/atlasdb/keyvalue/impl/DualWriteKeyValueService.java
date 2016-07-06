@@ -61,8 +61,7 @@ public class DualWriteKeyValueService implements KeyValueService {
 
     @Override
     public void teardown() {
-        delegate1.teardown();
-        delegate2.teardown();
+        close();
     }
 
     @Override

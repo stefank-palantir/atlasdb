@@ -266,7 +266,7 @@ public class TableRemappingKeyValueService extends ForwardingObject implements
 
     @Override
     public void teardown() {
-        delegate().teardown();
+        close();
     }
 
     @Override

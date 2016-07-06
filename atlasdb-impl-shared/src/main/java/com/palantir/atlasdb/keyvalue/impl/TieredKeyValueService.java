@@ -136,9 +136,7 @@ public class TieredKeyValueService implements KeyValueService {
 
     @Override
     public void teardown() {
-        primary.teardown();
-        secondary.teardown();
-        executor.shutdown();
+        close();
     }
 
     @Override

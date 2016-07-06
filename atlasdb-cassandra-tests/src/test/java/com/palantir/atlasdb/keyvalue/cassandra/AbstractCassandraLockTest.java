@@ -66,7 +66,7 @@ abstract public class AbstractCassandraLockTest {
 
     @After
     public void tearDown() {
-        kvs.teardown();
+        kvs.close();
     }
 
     @Test

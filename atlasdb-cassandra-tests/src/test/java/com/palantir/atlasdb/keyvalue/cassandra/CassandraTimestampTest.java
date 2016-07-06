@@ -38,7 +38,7 @@ public class CassandraTimestampTest {
 
     @After
     public void tearDown() {
-        kv.teardown();
+        kv.close();
     }
 
     @Test

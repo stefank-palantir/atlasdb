@@ -143,7 +143,6 @@ public class DbKvs extends AbstractKeyValueService {
 
     @Override
     public void teardown() {
-        super.teardown();
         close();
     }
 

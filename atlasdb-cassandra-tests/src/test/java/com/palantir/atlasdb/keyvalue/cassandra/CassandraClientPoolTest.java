@@ -70,7 +70,7 @@ public class CassandraClientPoolTest {
 
     @After
     public void tearDown() {
-        kv.teardown();
+        kv.close();
     }
 
 

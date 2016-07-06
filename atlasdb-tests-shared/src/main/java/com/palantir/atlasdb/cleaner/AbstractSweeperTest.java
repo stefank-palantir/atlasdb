@@ -122,7 +122,7 @@ public abstract class AbstractSweeperTest {
 
     @After
     public void tearDown() {
-        kvs.teardown();
+        kvs.close();
     }
 
     /**

@@ -829,7 +829,7 @@ public class PartitionedKeyValueService extends PartitionMapProvider implements 
             @Override
             public Void apply(@Nullable DynamicPartitionMap input) {
                 for (KeyValueService kvs : input.getDelegates()) {
-                    kvs.teardown();
+                    kvs.close();
                 }
                 return null;
             }

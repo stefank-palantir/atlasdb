@@ -112,9 +112,9 @@ public class TieredKvsTest {
 
     @After
     public void tearDown() {
-        tieredKvs.teardown();
-        primaryKvs.teardown();
-        secondaryKvs.teardown();
+        tieredKvs.close();
+        primaryKvs.close();
+        secondaryKvs.close();
     }
 
     @Test

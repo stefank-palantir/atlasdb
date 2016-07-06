@@ -311,9 +311,7 @@ public class TableSplittingKeyValueService implements KeyValueService {
 
     @Override
     public void teardown() {
-        for (KeyValueService delegate : delegates) {
-            delegate.teardown();
-        }
+        close();
     }
 
     @Override
