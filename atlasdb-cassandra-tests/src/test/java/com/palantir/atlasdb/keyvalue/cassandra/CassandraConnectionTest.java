@@ -44,13 +44,11 @@ public class CassandraConnectionTest {
             .autoRefreshNodes(false)
             .build();
 
-
     @Test
     public void testAuthProvided() {
         CassandraKeyValueService kv = CassandraKeyValueService.create(
                 CassandraKeyValueServiceConfigManager.createSimpleManager(CassandraTestSuite.CASSANDRA_KVS_CONFIG));
         kv.close();
-        assert true; // getting here implies authentication succeeded
     }
 
     @Test
