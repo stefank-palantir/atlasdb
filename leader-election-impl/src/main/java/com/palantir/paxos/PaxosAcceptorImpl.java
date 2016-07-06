@@ -32,7 +32,7 @@ public class PaxosAcceptorImpl implements PaxosAcceptor {
     public static PaxosAcceptor newAcceptor(String logDir) {
         PaxosStateLog<PaxosAcceptorState> log = new PaxosStateLogImpl<>(logDir);
         return new PaxosAcceptorImpl(
-                new ConcurrentSkipListMap<>(),
+                new ConcurrentSkipListMap<Long, PaxosAcceptorState>(),
                 log);
     }
 
@@ -48,16 +48,16 @@ public class PaxosAcceptorImpl implements PaxosAcceptor {
     }
 
     @Override
-    public PaxosPromise prepare(long seq, PaxosProposalId pid) {
+    public PaxosPromise prepare(PaxosKey paxosKey, PaxosProposalId pid) {
         try {
-            checkLogIfNeeded(seq);
+            checkLogIfNeeded(paxosKey.seq());
         } catch (Exception e) {
-            logger.error("log read failed for request: " + seq, e);
+            logger.error("log read failed for request: " + paxosKey, e);
             return PaxosPromise.reject(pid); // nack
         }
 
         for (;;) {
-            PaxosAcceptorState oldState = state.get(seq);
+            PaxosAcceptorState oldState = state.get(paxosKey);
 
             if (oldState != null && pid.compareTo(oldState.lastPromisedId) < 0) {
                 return PaxosPromise.reject(oldState.lastPromisedId);
@@ -75,9 +75,9 @@ public class PaxosAcceptorImpl implements PaxosAcceptor {
             PaxosAcceptorState newState = oldState != null
                     ? oldState.withPromise(pid)
                     : PaxosAcceptorState.newState(pid);
-            if ((oldState == null && state.putIfAbsent(seq, newState) == null)
-                    || (oldState != null && state.replace(seq, oldState, newState))) {
-                log.writeRound(seq, newState);
+            if ((oldState == null && state.putIfAbsent(paxosKey.seq(), newState) == null)
+                    || (oldState != null && state.replace(paxosKey.seq(), oldState, newState))) {
+                log.writeRound(paxosKey.seq(), newState);
                 return PaxosPromise.accept(
                         newState.lastPromisedId,
                         newState.lastAcceptedId,

@@ -38,7 +38,7 @@ public interface PaxosAcceptor {
     @Path("prepare/{seq}")
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
-    public PaxosPromise prepare(@PathParam("seq") long seq, PaxosProposalId pid);
+    public PaxosPromise prepare(@PathParam("seq") PaxosKey seq, PaxosProposalId pid);
 
     /**
      * The acceptor decides whether to accept or reject a given proposal.

@@ -88,7 +88,7 @@ public class PaxosProposerImpl implements PaxosProposer {
         final PaxosProposalId proposalID = new PaxosProposalId(proposalNum.incrementAndGet(), uuid);
         PaxosValue toPropose = new PaxosValue(key, bytes);
 
-        final PaxosValue finalValue = prepareAndPromise(seq, proposalID, toPropose);
+        final PaxosValue finalValue = prepareAndPromise(key, proposalID, toPropose);
         collectAcceptancesForProposal(seq, proposalID, finalValue);
         broadcastLearnedValue(seq, finalValue);
 
@@ -106,7 +106,7 @@ public class PaxosProposerImpl implements PaxosProposer {
      * @return the value accepted by the quorum
      * @throws PaxosRoundFailureException if quorum cannot be reached in this phase
      */
-    private PaxosValue prepareAndPromise(final long seq, final PaxosProposalId pid, PaxosValue value)
+    private PaxosValue prepareAndPromise(final PaxosKey seq, final PaxosProposalId pid, PaxosValue value)
             throws PaxosRoundFailureException {
         List<PaxosPromise> receivedPromises = PaxosQuorumChecker.<PaxosAcceptor, PaxosPromise> collectQuorumResponses(
                 allAcceptors,
