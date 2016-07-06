@@ -30,15 +30,14 @@ public interface PaxosAcceptor {
      * The acceptor prepares for a given proposal by either promising not to accept future proposals
      * or rejecting the proposal.
      *
-     * @param seq the number identifying this instance of paxos
-     * @param pid the proposal to prepare for
-     * @return a paxos promise not to accept lower numbered proposals
+     *
+     * @param paxosRequest@return a paxos promise not to accept lower numbered proposals
      */
     @POST
     @Path("prepare/{seq}")
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
-    public PaxosPromise prepare(@PathParam("seq") PaxosKey seq, PaxosProposalId pid);
+    public PaxosPromise prepare(PaxosRequest paxosRequest);
 
     /**
      * The acceptor decides whether to accept or reject a given proposal.

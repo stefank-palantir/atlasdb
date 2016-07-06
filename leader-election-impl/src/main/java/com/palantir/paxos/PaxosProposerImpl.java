@@ -106,7 +106,7 @@ public class PaxosProposerImpl implements PaxosProposer {
      * @return the value accepted by the quorum
      * @throws PaxosRoundFailureException if quorum cannot be reached in this phase
      */
-    private PaxosValue prepareAndPromise(final PaxosKey seq, final PaxosProposalId pid, PaxosValue value)
+    private PaxosValue prepareAndPromise(final PaxosKey key, final PaxosProposalId pid, PaxosValue value)
             throws PaxosRoundFailureException {
         List<PaxosPromise> receivedPromises = PaxosQuorumChecker.<PaxosAcceptor, PaxosPromise> collectQuorumResponses(
                 allAcceptors,
@@ -114,7 +114,7 @@ public class PaxosProposerImpl implements PaxosProposer {
                     @Override
                     @Nullable
                     public PaxosPromise apply(@Nullable PaxosAcceptor acceptor) {
-                        return acceptor.prepare(seq, pid);
+                        return acceptor.prepare(new PaxosRequest(key, pid));
                     }
                 },
                 quorumSize,

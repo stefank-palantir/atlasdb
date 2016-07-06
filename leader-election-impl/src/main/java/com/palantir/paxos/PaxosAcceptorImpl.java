@@ -48,16 +48,19 @@ public class PaxosAcceptorImpl implements PaxosAcceptor {
     }
 
     @Override
-    public PaxosPromise prepare(PaxosKey paxosKey, PaxosProposalId pid) {
+    public PaxosPromise prepare(PaxosRequest paxosRequest) {
+        PaxosKey key = paxosRequest.getSeq();
+        PaxosProposalId pid = paxosRequest.getPid();
+
         try {
-            checkLogIfNeeded(paxosKey.seq());
+            checkLogIfNeeded(key.seq());
         } catch (Exception e) {
-            logger.error("log read failed for request: " + paxosKey, e);
+            logger.error("log read failed for request: " + key, e);
             return PaxosPromise.reject(pid); // nack
         }
 
         for (;;) {
-            PaxosAcceptorState oldState = state.get(paxosKey);
+            PaxosAcceptorState oldState = state.get(key);
 
             if (oldState != null && pid.compareTo(oldState.lastPromisedId) < 0) {
                 return PaxosPromise.reject(oldState.lastPromisedId);
@@ -75,9 +78,9 @@ public class PaxosAcceptorImpl implements PaxosAcceptor {
             PaxosAcceptorState newState = oldState != null
                     ? oldState.withPromise(pid)
                     : PaxosAcceptorState.newState(pid);
-            if ((oldState == null && state.putIfAbsent(paxosKey.seq(), newState) == null)
-                    || (oldState != null && state.replace(paxosKey.seq(), oldState, newState))) {
-                log.writeRound(paxosKey.seq(), newState);
+            if ((oldState == null && state.putIfAbsent(key.seq(), newState) == null)
+                    || (oldState != null && state.replace(key.seq(), oldState, newState))) {
+                log.writeRound(key.seq(), newState);
                 return PaxosPromise.accept(
                         newState.lastPromisedId,
                         newState.lastAcceptedId,
