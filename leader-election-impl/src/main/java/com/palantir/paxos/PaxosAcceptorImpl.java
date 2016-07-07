@@ -21,6 +21,8 @@ import java.util.concurrent.ConcurrentSkipListMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.annotations.VisibleForTesting;
+
 public class PaxosAcceptorImpl implements PaxosAcceptor {
     private static final Logger logger = LoggerFactory.getLogger(PaxosAcceptorImpl.class);
 
@@ -40,7 +42,8 @@ public class PaxosAcceptorImpl implements PaxosAcceptor {
     final PaxosStateLog<PaxosAcceptorState> log;
     final long greatestInLogAtStartup;
 
-    public PaxosAcceptorImpl(ConcurrentSkipListMap<Long, PaxosAcceptorState> state,
+    @VisibleForTesting
+    PaxosAcceptorImpl(ConcurrentSkipListMap<Long, PaxosAcceptorState> state,
                              PaxosStateLog<PaxosAcceptorState> log) {
         this.state = state;
         this.log = log;
