@@ -72,5 +72,4 @@ public interface PaxosLearner {
     @Path("learned-values-since/{seq:.+}")
     @Produces(MediaType.APPLICATION_JSON)
     Collection<PaxosValue> getLearnedValuesSince(@PathParam("seq") @Inclusive long seq);
-
 }
