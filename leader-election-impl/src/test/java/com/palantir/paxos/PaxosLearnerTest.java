@@ -17,6 +17,9 @@
 package com.palantir.paxos;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 
@@ -41,17 +44,17 @@ public class PaxosLearnerTest {
     }
 
     @Test
-    public void newLearnerHasNoGreatestLearnedValue() throws IOException {
+    public void should_have_no_greatest_learned_value_on_startup() throws IOException {
         assertThat(learner.getGreatestLearnedValue(), is(nullValue()));
     }
 
     @Test
-    public void newLearnerReturnsNullForGivenLearnedValue() {
+    public void should_return_null_for_unlearned_value() {
         assertThat(learner.getLearnedValue(1L), is(nullValue()));
     }
 
     @Test
-    public void canLearnSingle() {
+    public void should_learn_single_value() {
         long seq = 1L;
         PaxosValue val = new PaxosValue(PaxosKey.fromSeq(seq), "blah".getBytes());
         learner.learn(seq, val);
@@ -61,7 +64,7 @@ public class PaxosLearnerTest {
     }
 
     @Test
-    public void getLearnedValueStillReturnsNullAfterLearningOthervalue() {
+    public void should_still_return_null_after_learning_other_value() {
         long seq = 0L;
         learnBlahFor(seq);
 
@@ -69,7 +72,7 @@ public class PaxosLearnerTest {
     }
 
     @Test
-    public void canLearnOutOfOrderValuesAndStillReturnGreatest() {
+    public void should_learn_out_of_order_value_and_still_return_greatest() {
         PaxosValue higherValue = learnBlahFor(1L);
 
         assertThat(learner.getGreatestLearnedValue(), is(higherValue));
@@ -80,12 +83,52 @@ public class PaxosLearnerTest {
     }
 
     @Test
-    public void updatesGreatestLearnedValue() {
+    public void should_update_greatest_learned_value() {
         PaxosValue lowerValue = learnBlahFor(0L);
         assertThat(learner.getGreatestLearnedValue(), is(lowerValue));
 
         PaxosValue higherValue = learnBlahFor(1L);
         assertThat(learner.getGreatestLearnedValue(), is(higherValue));
+    }
+
+    @Test
+    public void should_get_no_learned_values_since_greater_value() {
+        learnBlahFor(0L);
+
+        assertThat(learner.getLearnedValuesSince(1L), empty());
+    }
+
+    @Test
+    public void should_get_learned_values_inclusively() {
+        PaxosValue paxosValue = learnBlahFor(1L);
+
+        assertThat(learner.getLearnedValuesSince(1L), contains(paxosValue));
+    }
+
+
+    @Test
+    public void should_ensure_sequence_persists_between_objects() {
+        PaxosValue toLearnFromLog = learnBlahFor(0L);
+
+        PaxosLearner fromLog = PaxosLearnerImpl.newLearner(logPath);
+        assertThat(fromLog.getLearnedValue(0L), is(toLearnFromLog));
+    }
+
+    @Test
+    public void should_persist_greatest_learned_value_between_objects() {
+        PaxosValue toLearnFromLog = learnBlahFor(0L);
+
+        PaxosLearner fromLog = PaxosLearnerImpl.newLearner(logPath);
+        assertThat(fromLog.getGreatestLearnedValue(), is(toLearnFromLog));
+    }
+
+    @Test
+    public void should_persist_learned_values_between_objects() {
+        PaxosValue lowerValue = learnBlahFor(0L);
+        PaxosValue higherValue = learnBlahFor(1L);
+
+        PaxosLearner fromLog = PaxosLearnerImpl.newLearner(logPath);
+        assertThat(fromLog.getLearnedValuesSince(0L), containsInAnyOrder(lowerValue, higherValue));
     }
 
     private PaxosValue learnBlahFor(long seq) {
