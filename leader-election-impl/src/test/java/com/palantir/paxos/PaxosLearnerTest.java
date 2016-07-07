@@ -92,6 +92,11 @@ public class PaxosLearnerTest {
     }
 
     @Test
+    public void should_get_no_learned_values_if_never_learned_a_value() {
+        assertThat(learner.getLearnedValuesSince(1L), empty());
+    }
+
+    @Test
     public void should_get_no_learned_values_since_greater_value() {
         learnBlahFor(0L);
 
@@ -103,6 +108,14 @@ public class PaxosLearnerTest {
         PaxosValue paxosValue = learnBlahFor(1L);
 
         assertThat(learner.getLearnedValuesSince(1L), contains(paxosValue));
+    }
+
+    @Test
+    public void should_get_multiple_learned_values() {
+        PaxosValue lowerValue = learnBlahFor(0L);
+        PaxosValue higherValue = learnBlahFor(2L);
+
+        assertThat(learner.getLearnedValuesSince(0L), containsInAnyOrder(lowerValue, higherValue));
     }
 
 
