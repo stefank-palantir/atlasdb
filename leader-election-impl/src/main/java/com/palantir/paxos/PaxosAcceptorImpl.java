@@ -52,7 +52,7 @@ public class PaxosAcceptorImpl implements PaxosAcceptor {
 
     @Override
     public PaxosPromise prepare(PrepareRequest prepareRequest) {
-        PaxosKey key = prepareRequest.getKey();
+        PaxosInstanceId key = prepareRequest.getKey();
         PaxosProposalId pid = prepareRequest.getPid();
 
         try {

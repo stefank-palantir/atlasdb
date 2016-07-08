@@ -27,7 +27,7 @@ import com.palantir.leader.PingableLeader;
 import com.palantir.paxos.AcceptRequest;
 import com.palantir.paxos.PaxosAcceptor;
 import com.palantir.paxos.PaxosAcceptorImpl;
-import com.palantir.paxos.PaxosKey;
+import com.palantir.paxos.PaxosInstanceId;
 import com.palantir.paxos.PaxosLearner;
 import com.palantir.paxos.PaxosLearnerImpl;
 import com.palantir.paxos.PaxosProposal;
@@ -79,7 +79,7 @@ public class LeaderRemotingTest {
     public void testLearn() throws IOException {
         ObjectMapper mapper = new ObjectMapper();
 
-        PaxosKey key0 = PaxosKey.fromSeq(0);
+        PaxosInstanceId key0 = PaxosInstanceId.fromSeq(0);
         PaxosValue value = new PaxosValue(key0, new byte[] {0, 1, 2});
 
         PaxosLearner learn = Feign.builder()
@@ -102,7 +102,7 @@ public class LeaderRemotingTest {
         ObjectMapper mapper = new ObjectMapper();
 
         PaxosProposalId id = new PaxosProposalId(123123, UUID.randomUUID().toString());
-        PaxosProposal paxosProposal = new PaxosProposal(id, new PaxosValue(PaxosKey.fromSeq(0), new byte[] {0, 1, 2, 4, 1}));
+        PaxosProposal paxosProposal = new PaxosProposal(id, new PaxosValue(PaxosInstanceId.fromSeq(0), new byte[] {0, 1, 2, 4, 1}));
 
 
         PaxosAcceptor accept = Feign.builder()
@@ -111,10 +111,10 @@ public class LeaderRemotingTest {
                 .contract(new JAXRSContract())
                 .target(PaxosAcceptor.class, acceptor.baseUri().toString());
 
-        accept.accept(AcceptRequest.from(PaxosKey.fromSeq(0), paxosProposal));
+        accept.accept(AcceptRequest.from(PaxosInstanceId.fromSeq(0), paxosProposal));
         accept.getLatestSequencePreparedOrAccepted();
-        accept.prepare(PrepareRequest.from(PaxosKey.fromSeq(0), id));
-        accept.prepare(PrepareRequest.from(PaxosKey.fromSeq(1), id));
+        accept.prepare(PrepareRequest.from(PaxosInstanceId.fromSeq(0), id));
+        accept.prepare(PrepareRequest.from(PaxosInstanceId.fromSeq(1), id));
     }
 
 }

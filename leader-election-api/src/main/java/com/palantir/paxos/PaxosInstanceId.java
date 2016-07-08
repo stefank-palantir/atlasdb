@@ -25,22 +25,22 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 @Value.Immutable
-@JsonDeserialize(as = ImmutablePaxosKey.class)
-@JsonSerialize(as = ImmutablePaxosKey.class)
-public abstract class PaxosKey implements Comparable<PaxosKey>, Serializable {
+@JsonDeserialize(as = ImmutablePaxosInstanceId.class)
+@JsonSerialize(as = ImmutablePaxosInstanceId.class)
+public abstract class PaxosInstanceId implements Comparable<PaxosInstanceId>, Serializable {
     @Override
-    public int compareTo(PaxosKey o) {
+    public int compareTo(PaxosInstanceId o) {
         return ((Long) seq()).compareTo(o.seq());
     }
 
     @JsonProperty("seq")
     public abstract long seq();
 
-    public static PaxosKey fromSeq(long seq) {
-        return ImmutablePaxosKey.builder().seq(seq).build();
+    public static PaxosInstanceId fromSeq(long seq) {
+        return ImmutablePaxosInstanceId.builder().seq(seq).build();
     }
 
-    public static PaxosKey fromString(String seq) {
+    public static PaxosInstanceId fromString(String seq) {
         return fromSeq(Long.parseLong(seq));
     }
 

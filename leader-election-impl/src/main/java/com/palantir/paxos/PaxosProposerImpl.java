@@ -83,7 +83,7 @@ public class PaxosProposerImpl implements PaxosProposer {
     }
 
     @Override
-    public byte[] propose(final PaxosKey key, @Nullable byte[] bytes) throws PaxosRoundFailureException {
+    public byte[] propose(final PaxosInstanceId key, @Nullable byte[] bytes) throws PaxosRoundFailureException {
         final PaxosProposalId proposalID = new PaxosProposalId(proposalNum.incrementAndGet(), uuid);
         PaxosValue toPropose = new PaxosValue(key, bytes);
 
@@ -105,7 +105,7 @@ public class PaxosProposerImpl implements PaxosProposer {
      * @return the value accepted by the quorum
      * @throws PaxosRoundFailureException if quorum cannot be reached in this phase
      */
-    private PaxosValue prepareAndPromise(final PaxosKey key, final PaxosProposalId pid, PaxosValue value)
+    private PaxosValue prepareAndPromise(final PaxosInstanceId key, final PaxosProposalId pid, PaxosValue value)
             throws PaxosRoundFailureException {
         List<PaxosPromise> receivedPromises = PaxosQuorumChecker.<PaxosAcceptor, PaxosPromise> collectQuorumResponses(
                 allAcceptors,
@@ -153,7 +153,7 @@ public class PaxosProposerImpl implements PaxosProposer {
      * @param val the value agree on in phase one of paxos
      * @throws PaxosRoundFailureException if quorum cannot be reached in this phase
      */
-    private void collectAcceptancesForProposal(final PaxosKey key, PaxosProposalId pid, PaxosValue val)
+    private void collectAcceptancesForProposal(final PaxosInstanceId key, PaxosProposalId pid, PaxosValue val)
             throws PaxosRoundFailureException {
         final PaxosProposal proposal = new PaxosProposal(pid, val);
         List<PaxosResponse> responses = PaxosQuorumChecker.<PaxosAcceptor, PaxosResponse> collectQuorumResponses(

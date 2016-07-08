@@ -34,7 +34,7 @@ public interface PaxosProposer {
      *         equipped to handle this case. PaxosProposerImpl will not throw in this case,
      *         but requires it be enforced on a higher level.
      */
-    public byte[] propose(PaxosKey key, @Nullable byte[] proposalValue)
+    public byte[] propose(PaxosInstanceId key, @Nullable byte[] proposalValue)
             throws PaxosRoundFailureException;
 
     /**

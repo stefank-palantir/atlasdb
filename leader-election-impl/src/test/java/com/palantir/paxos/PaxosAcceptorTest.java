@@ -32,11 +32,11 @@ import org.junit.rules.TemporaryFolder;
 
 public class PaxosAcceptorTest {
     private static final long SEQ = 1L;
-    private static final PaxosKey KEY = PaxosKey.fromSeq(SEQ);
+    private static final PaxosInstanceId KEY = PaxosInstanceId.fromSeq(SEQ);
 
     private static final PaxosProposalId DEFAULT_PROPOSAL_ID = new PaxosProposalId(1L, "uuid");
     private static final PrepareRequest DEFAULT_PAXOS_REQUEST = PrepareRequest.from(KEY, DEFAULT_PROPOSAL_ID);
-    private static final PaxosValue DEFAULT_VALUE = new PaxosValue(PaxosKey.fromSeq(1L), null);
+    private static final PaxosValue DEFAULT_VALUE = new PaxosValue(PaxosInstanceId.fromSeq(1L), null);
     private static final PaxosProposal DEFAULT_PROPOSAL = new PaxosProposal(DEFAULT_PROPOSAL_ID, DEFAULT_VALUE);
     private static final PaxosProposalId HIGHER_PROPOSAL_ID = new PaxosProposalId(2L, "uuid");
     private static final PrepareRequest HIGHER_PAXOS_REQUEST = PrepareRequest.from(KEY, HIGHER_PROPOSAL_ID);
@@ -166,7 +166,7 @@ public class PaxosAcceptorTest {
     public void should_get_latest_sequence_from_state_after_prepare_or_accept() {
         PaxosAcceptorImpl acceptorImpl = getPaxosAcceptorWithPreparedLog();
         long newSeq = LOGGED_SEQ + 1;
-        acceptorImpl.prepare(PrepareRequest.from(PaxosKey.fromSeq(newSeq), DEFAULT_PROPOSAL_ID));
+        acceptorImpl.prepare(PrepareRequest.from(PaxosInstanceId.fromSeq(newSeq), DEFAULT_PROPOSAL_ID));
 
         long latest = acceptorImpl.getLatestSequencePreparedOrAccepted();
 
@@ -199,7 +199,7 @@ public class PaxosAcceptorTest {
         PaxosAcceptorImpl acceptorImpl = getPaxosAcceptorWithPreparedLog();
         PaxosPromise expected = PaxosPromise.reject(HIGHER_PROPOSAL_ID);
 
-        PaxosPromise promise = acceptorImpl.prepare(PrepareRequest.from(PaxosKey.fromSeq(LOGGED_SEQ), DEFAULT_PROPOSAL_ID));
+        PaxosPromise promise = acceptorImpl.prepare(PrepareRequest.from(PaxosInstanceId.fromSeq(LOGGED_SEQ), DEFAULT_PROPOSAL_ID));
 
         assertEquals(expected, promise);
     }

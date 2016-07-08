@@ -47,9 +47,9 @@ public interface PaxosLearner {
      */
     @Nullable
     @GET
-    @Path("learned-value/{seq:.+}")
+    @Path("learned-value/{instance:.+}")
     @Produces(MediaType.APPLICATION_JSON)
-    PaxosValue getLearnedValue(@PathParam("seq") PaxosKey key);
+    PaxosValue getLearnedValue(@PathParam("instance") PaxosInstanceId instanceId);
 
     /**
      * @return the learned value for the greatest known round or null if nothing has been learned
@@ -61,14 +61,14 @@ public interface PaxosLearner {
     PaxosValue getGreatestLearnedValue();
 
     /**
-     * Returns some collection of learned values since the seq-th round (inclusive)
+     * Returns some collection of learned values since this instance
      *
      * @param seq lower round cutoff for returned values
      * @return some set of learned values for rounds since the seq-th round
      */
     @Nonnull
     @GET
-    @Path("learned-values-since/{seq:.+}")
+    @Path("learned-values-since/{instance:.+}")
     @Produces(MediaType.APPLICATION_JSON)
-    Collection<PaxosValue> getLearnedValuesSince(@PathParam("seq") @Inclusive PaxosKey seq);
+    Collection<PaxosValue> getLearnedValuesSince(@PathParam("instance") @Inclusive PaxosInstanceId instance);
 }

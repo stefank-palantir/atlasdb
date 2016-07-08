@@ -38,7 +38,7 @@ public class PaxosValue implements Persistable, Versionable, Serializable {
 
     @Nullable
     final byte[] data;
-    final PaxosKey key;
+    final PaxosInstanceId key;
 
     public static final Hydrator<PaxosValue> BYTES_HYDRATOR = new Hydrator<PaxosValue>() {
         @Override
@@ -53,13 +53,13 @@ public class PaxosValue implements Persistable, Versionable, Serializable {
     };
 
     @JsonCreator
-    public PaxosValue(@JsonProperty("round") PaxosKey key,
+    public PaxosValue(@JsonProperty("round") PaxosInstanceId key,
                       @JsonProperty("data") @Nullable byte[] data) {
         this.key = key;
         this.data = data;
     }
 
-    public PaxosKey getRound() {
+    public PaxosInstanceId getRound() {
         return key;
     }
 
@@ -89,7 +89,7 @@ public class PaxosValue implements Persistable, Versionable, Serializable {
         if (message.hasBytes()) {
             bytes = message.getBytes().toByteArray();
         }
-        return new PaxosValue(PaxosKey.fromSeq(seq), bytes);
+        return new PaxosValue(PaxosInstanceId.fromSeq(seq), bytes);
     }
 
     @Override

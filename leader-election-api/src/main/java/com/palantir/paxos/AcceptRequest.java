@@ -25,11 +25,11 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 @JsonDeserialize(as = ImmutableAcceptRequest.class)
 @Value.Immutable
 public abstract class AcceptRequest {
-    public abstract PaxosKey getKey();
+    public abstract PaxosInstanceId getKey();
 
     public abstract PaxosProposal getProposal();
 
-    public static AcceptRequest from(PaxosKey key, PaxosProposal proposal) {
+    public static AcceptRequest from(PaxosInstanceId key, PaxosProposal proposal) {
         return ImmutableAcceptRequest.builder().key(key).proposal(proposal).build();
     }
 }

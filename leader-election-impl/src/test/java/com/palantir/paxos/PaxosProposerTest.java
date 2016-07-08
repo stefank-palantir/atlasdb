@@ -54,7 +54,7 @@ public class PaxosProposerTest {
 
     private static final BooleanPaxosResponse FAILED_ACCEPTANCE = new BooleanPaxosResponse(false);
     private static final long SEQ = 1L;
-    private static final PaxosKey KEY = ImmutablePaxosKey.builder().seq(SEQ).build();
+    private static final PaxosInstanceId KEY = ImmutablePaxosInstanceId.builder().seq(SEQ).build();
     private static final byte[] VALUE = "hello".getBytes();
     private static final byte[] ALREADY_ACCEPTED_VALUE = "world".getBytes();
 
@@ -187,7 +187,7 @@ public class PaxosProposerTest {
     }
 
     private PaxosPromise alreadyPromised(byte[] otherValue) {
-        return PaxosPromise.create(true, PROPOSAL_ID, ACCEPTED_PROPOSAL_ID, new PaxosValue(PaxosKey.fromSeq(SEQ), otherValue));
+        return PaxosPromise.create(true, PROPOSAL_ID, ACCEPTED_PROPOSAL_ID, new PaxosValue(PaxosInstanceId.fromSeq(SEQ), otherValue));
     }
 
     private PaxosProposer createProposerWithAcceptors(ImmutableList<PaxosAcceptor> acceptors) {
@@ -206,7 +206,7 @@ public class PaxosProposerTest {
         return acceptor;
     }
 
-    private Matcher<PrepareRequest> isPrepareRequestWithKey(final PaxosKey key) {
+    private Matcher<PrepareRequest> isPrepareRequestWithKey(final PaxosInstanceId key) {
         return new BaseMatcher<PrepareRequest>() {
             @Override
             public boolean matches(Object item) {
@@ -221,7 +221,7 @@ public class PaxosProposerTest {
         };
     }
 
-    private Matcher<AcceptRequest> isAcceptRequestWithKey(final PaxosKey key) {
+    private Matcher<AcceptRequest> isAcceptRequestWithKey(final PaxosInstanceId key) {
         return new BaseMatcher<AcceptRequest>() {
             @Override
             public boolean matches(Object item) {
@@ -247,7 +247,7 @@ public class PaxosProposerTest {
     }
 
     private PaxosValue paxosValueFor(PaxosProposer proposer) {
-        return new PaxosValue(PaxosKey.fromSeq(SEQ), VALUE);
+        return new PaxosValue(PaxosInstanceId.fromSeq(SEQ), VALUE);
     }
 
     private PaxosPromise failedPromise() {

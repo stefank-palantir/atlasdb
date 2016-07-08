@@ -160,7 +160,7 @@ public class PaxosConsensusFastTest {
 
         // write to log
         PaxosStateLog<PaxosValue> log = new PaxosStateLogImpl<PaxosValue>(dir);
-        log.writeRound(seq, new PaxosValue(PaxosKey.fromSeq(0), proposedData));
+        log.writeRound(seq, new PaxosValue(PaxosInstanceId.fromSeq(0), proposedData));
 
         // read back from log
         try {
@@ -186,7 +186,7 @@ public class PaxosConsensusFastTest {
         PaxosLearnerImpl learner = (PaxosLearnerImpl)
                 ((DelegatingInvocationHandler) Proxy.getInvocationHandler(state.learner(0))).getDelegate();
         PaxosStateLog<PaxosValue> log = learner.log;
-        SortedMap<PaxosKey, PaxosValue> cache = learner.state;
+        SortedMap<PaxosInstanceId, PaxosValue> cache = learner.state;
         log.truncate(log.getGreatestLogEntry());
         cache.clear();
         state.gainLeadership(0);

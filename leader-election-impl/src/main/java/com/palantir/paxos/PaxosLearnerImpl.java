@@ -35,7 +35,7 @@ public class PaxosLearnerImpl implements PaxosLearner {
      */
     public static PaxosLearner newLearner(String logDir) {
         PaxosStateLogImpl<PaxosValue> log = new PaxosStateLogImpl<>(logDir);
-        ConcurrentSkipListMap<PaxosKey, PaxosValue> state = new ConcurrentSkipListMap<>();
+        ConcurrentSkipListMap<PaxosInstanceId, PaxosValue> state = new ConcurrentSkipListMap<>();
 
         byte[] greatestValidValue = PaxosStateLogs.getGreatestValidLogEntry(log);
         if (greatestValidValue != null) {
@@ -46,10 +46,10 @@ public class PaxosLearnerImpl implements PaxosLearner {
         return new PaxosLearnerImpl(state, log);
     }
 
-    final SortedMap<PaxosKey, PaxosValue> state;
+    final SortedMap<PaxosInstanceId, PaxosValue> state;
     final PaxosStateLog<PaxosValue> log;
 
-    private PaxosLearnerImpl(SortedMap<PaxosKey, PaxosValue> stateWithGreatestValueFromLog,
+    private PaxosLearnerImpl(SortedMap<PaxosInstanceId, PaxosValue> stateWithGreatestValueFromLog,
                              PaxosStateLog<PaxosValue> log) {
         this.state = stateWithGreatestValueFromLog;
         this.log = log;
@@ -62,17 +62,17 @@ public class PaxosLearnerImpl implements PaxosLearner {
     }
 
     @Override
-    public PaxosValue getLearnedValue(PaxosKey key) {
-        long seq = key.seq();
+    public PaxosValue getLearnedValue(PaxosInstanceId instance) {
+        long seq = instance.seq();
         try {
-            if (!state.containsKey(key)) {
+            if (!state.containsKey(instance)) {
                 byte[] bytes = log.readRound(seq);
                 if (bytes != null) {
                     PaxosValue value = PaxosValue.BYTES_HYDRATOR.hydrateFromBytes(log.readRound(seq));
-                    state.put(key, value);
+                    state.put(instance, value);
                 }
             }
-            return state.get(key);
+            return state.get(instance);
         } catch (IOException e) {
             logger.error("unable to get corrupt learned value", e);
             return null;
@@ -80,8 +80,8 @@ public class PaxosLearnerImpl implements PaxosLearner {
     }
 
     @Override
-    public Collection<PaxosValue> getLearnedValuesSince(PaxosKey key) {
-        long seq = key.seq();
+    public Collection<PaxosValue> getLearnedValuesSince(PaxosInstanceId instance) {
+        long seq = instance.seq();
         PaxosValue greatestLearnedValue = getGreatestLearnedValue();
         long greatestSeq = -1L;
         if (greatestLearnedValue != null) {
@@ -91,7 +91,7 @@ public class PaxosLearnerImpl implements PaxosLearner {
         Collection<PaxosValue> values = new ArrayList<PaxosValue>();
         for (long i = seq; i <= greatestSeq; i++) {
             PaxosValue value;
-            value = getLearnedValue(PaxosKey.fromSeq(i));
+            value = getLearnedValue(PaxosInstanceId.fromSeq(i));
             if (value != null) {
                 values.add(value);
             }

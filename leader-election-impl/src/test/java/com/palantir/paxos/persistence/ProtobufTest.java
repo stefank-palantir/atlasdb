@@ -19,7 +19,7 @@ import static org.junit.Assert.assertEquals;
 
 import org.junit.Test;
 
-import com.palantir.paxos.PaxosKey;
+import com.palantir.paxos.PaxosInstanceId;
 import com.palantir.paxos.PaxosPromise;
 import com.palantir.paxos.PaxosPromises;
 import com.palantir.paxos.PaxosProposal;
@@ -39,12 +39,12 @@ public class ProtobufTest {
         byte[] persisted;
         PaxosValue actual;
 
-        expected = new PaxosValue(PaxosKey.fromSeq(2), new byte[]{8, 0, 1, 2, 5});
+        expected = new PaxosValue(PaxosInstanceId.fromSeq(2), new byte[]{8, 0, 1, 2, 5});
         persisted = expected.persistToBytes();
         actual = PaxosValue.hydrateFromProto(PaxosPersistence.PaxosValue.parseFrom(persisted));
         assertEquals(expected, actual);
 
-        expected = new PaxosValue(PaxosKey.fromSeq(2), null);
+        expected = new PaxosValue(PaxosInstanceId.fromSeq(2), null);
         persisted = expected.persistToBytes();
         actual = PaxosValue.hydrateFromProto(PaxosPersistence.PaxosValue.parseFrom(persisted));
         assertEquals(expected, actual);
@@ -73,12 +73,12 @@ public class ProtobufTest {
         PaxosAcceptorPersistence.PaxosProposal persisted;
         PaxosProposal actual;
 
-        expected = new PaxosProposal(new PaxosProposalId(55, "nonce"), new PaxosValue(PaxosKey.fromSeq(93), null));
+        expected = new PaxosProposal(new PaxosProposalId(55, "nonce"), new PaxosValue(PaxosInstanceId.fromSeq(93), null));
         persisted = expected.persistToProto();
         actual = PaxosProposal.hydrateFromProto(persisted);
         assertEquals(expected, actual);
 
-        expected = new PaxosProposal(new PaxosProposalId(0, "noice"), new PaxosValue(PaxosKey.fromSeq(93), new byte[]{}));
+        expected = new PaxosProposal(new PaxosProposalId(0, "noice"), new PaxosValue(PaxosInstanceId.fromSeq(93), new byte[]{}));
         persisted = expected.persistToProto();
         actual = PaxosProposal.hydrateFromProto(persisted);
         assertEquals(expected, actual);
@@ -91,10 +91,10 @@ public class ProtobufTest {
         expected = PaxosPromise.reject(new PaxosProposalId(3, "unique"));
         checkPersistence(expected);
 
-        expected = PaxosPromise.accept(new PaxosProposalId(20, "id"), new PaxosProposalId(6, "fire"), new PaxosValue(PaxosKey.fromSeq(5), new byte[]{8, 8, 100}));
+        expected = PaxosPromise.accept(new PaxosProposalId(20, "id"), new PaxosProposalId(6, "fire"), new PaxosValue(PaxosInstanceId.fromSeq(5), new byte[]{8, 8, 100}));
         checkPersistence(expected);
 
-        expected = PaxosPromise.accept(new PaxosProposalId(20, "id"), null, new PaxosValue(PaxosKey.fromSeq(5), new byte[]{8, 8, 100}));
+        expected = PaxosPromise.accept(new PaxosProposalId(20, "id"), null, new PaxosValue(PaxosInstanceId.fromSeq(5), new byte[]{8, 8, 100}));
         checkPersistence(expected);
 
         expected = PaxosPromise.accept(new PaxosProposalId(20, "id"), null, null);

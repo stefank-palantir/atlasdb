@@ -25,11 +25,11 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 @JsonDeserialize(as = ImmutablePrepareRequest.class)
 @Value.Immutable
 public abstract class PrepareRequest {
-    public abstract PaxosKey getKey();
+    public abstract PaxosInstanceId getKey();
 
     public abstract PaxosProposalId getPid();
 
-    public static PrepareRequest from(PaxosKey key, PaxosProposalId pid) {
+    public static PrepareRequest from(PaxosInstanceId key, PaxosProposalId pid) {
         return ImmutablePrepareRequest.builder().key(key).pid(pid).build();
 
     }

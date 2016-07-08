@@ -50,9 +50,9 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.net.HostAndPort;
 import com.palantir.common.base.Throwables;
-import com.palantir.paxos.ImmutablePaxosKey;
+import com.palantir.paxos.ImmutablePaxosInstanceId;
 import com.palantir.paxos.PaxosAcceptor;
-import com.palantir.paxos.PaxosKey;
+import com.palantir.paxos.PaxosInstanceId;
 import com.palantir.paxos.PaxosLearner;
 import com.palantir.paxos.PaxosProposer;
 import com.palantir.paxos.PaxosQuorumChecker;
@@ -345,7 +345,7 @@ public class PaxosLeaderElectionService implements PingableLeader, LeaderElectio
             }
 
             leaderLog.info("Proposing leadership with sequence number " + seq);
-            PaxosKey key = ImmutablePaxosKey.builder().seq(seq).build();
+            PaxosInstanceId key = ImmutablePaxosInstanceId.builder().seq(seq).build();
             proposer.propose(key, getUUID().getBytes(Charsets.UTF_8));
         } catch (PaxosRoundFailureException e) {
             // We have failed trying to become the leader.
@@ -598,7 +598,7 @@ public class PaxosLeaderElectionService implements PingableLeader, LeaderElectio
                     @Nullable
                     public PaxosUpdate apply(@Nullable PaxosLearner learner) {
                         return new PaxosUpdate(
-                                copyOf(learner.getLearnedValuesSince(PaxosKey.fromSeq(nextToLearnSeq))));
+                                copyOf(learner.getLearnedValuesSince(PaxosInstanceId.fromSeq(nextToLearnSeq))));
                     }
                 },
                 proposer.getQuorumSize(),
