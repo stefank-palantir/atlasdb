@@ -50,7 +50,7 @@ public class PaxosLearnerTest {
 
     @Test
     public void should_return_null_for_unlearned_value() {
-        assertThat(learner.getLearnedValue(1L), is(nullValue()));
+        assertThat(learner.getLearnedValue(PaxosKey.fromSeq(1L)), is(nullValue()));
     }
 
     @Test
@@ -59,7 +59,7 @@ public class PaxosLearnerTest {
         PaxosValue val = new PaxosValue(PaxosKey.fromSeq(seq), "blah".getBytes());
         learner.learn(val);
 
-        assertThat(learner.getLearnedValue(seq), is(val));
+        assertThat(learner.getLearnedValue(PaxosKey.fromSeq(seq)), is(val));
         assertThat(learner.getGreatestLearnedValue(), is(val));
     }
 
@@ -68,7 +68,7 @@ public class PaxosLearnerTest {
         long seq = 0L;
         learnBlahFor(seq);
 
-        assertThat(learner.getLearnedValue(1L), is(nullValue()));
+        assertThat(learner.getLearnedValue(PaxosKey.fromSeq(1L)), is(nullValue()));
     }
 
     @Test
@@ -124,7 +124,7 @@ public class PaxosLearnerTest {
         PaxosValue toLearnFromLog = learnBlahFor(0L);
 
         PaxosLearner fromLog = PaxosLearnerImpl.newLearner(logPath);
-        assertThat(fromLog.getLearnedValue(0L), is(toLearnFromLog));
+        assertThat(fromLog.getLearnedValue(PaxosKey.fromSeq(0L)), is(toLearnFromLog));
     }
 
     @Test

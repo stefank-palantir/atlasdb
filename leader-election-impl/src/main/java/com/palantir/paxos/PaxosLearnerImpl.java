@@ -62,8 +62,8 @@ public class PaxosLearnerImpl implements PaxosLearner {
     }
 
     @Override
-    public PaxosValue getLearnedValue(long seq) {
-        PaxosKey key = PaxosKey.fromSeq(seq);
+    public PaxosValue getLearnedValue(PaxosKey key) {
+        long seq = key.seq();
         try {
             if (!state.containsKey(key)) {
                 byte[] bytes = log.readRound(seq);
@@ -91,7 +91,7 @@ public class PaxosLearnerImpl implements PaxosLearner {
         Collection<PaxosValue> values = new ArrayList<PaxosValue>();
         for (long i = seq; i <= greatestSeq; i++) {
             PaxosValue value;
-            value = getLearnedValue(i);
+            value = getLearnedValue(PaxosKey.fromSeq(i));
             if (value != null) {
                 values.add(value);
             }

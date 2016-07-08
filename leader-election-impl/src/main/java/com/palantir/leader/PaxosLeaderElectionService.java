@@ -610,7 +610,7 @@ public class PaxosLeaderElectionService implements PingableLeader, LeaderElectio
         for (PaxosUpdate update : updates) {
             ImmutableCollection<PaxosValue> values = update.getValues();
             for (PaxosValue value : values) {
-                PaxosValue currentLearnedValue = knowledge.getLearnedValue(value.getRound().seq());
+                PaxosValue currentLearnedValue = knowledge.getLearnedValue(value.getRound());
                 if (currentLearnedValue == null) {
                     knowledge.learn(value);
                     learned = true;

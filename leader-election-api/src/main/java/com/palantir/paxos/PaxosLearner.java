@@ -49,7 +49,7 @@ public interface PaxosLearner {
     @GET
     @Path("learned-value/{seq:.+}")
     @Produces(MediaType.APPLICATION_JSON)
-    PaxosValue getLearnedValue(@PathParam("seq") long seq);
+    PaxosValue getLearnedValue(@PathParam("seq") PaxosKey key);
 
     /**
      * @return the learned value for the greatest known round or null if nothing has been learned
