@@ -39,4 +39,13 @@ public abstract class PaxosKey implements Comparable<PaxosKey>, Serializable {
     public static PaxosKey fromSeq(long seq) {
         return ImmutablePaxosKey.builder().seq(seq).build();
     }
+
+    public static PaxosKey fromString(String seq) {
+        return fromSeq(Long.parseLong(seq));
+    }
+
+    @Override
+    public String toString() {
+        return String.valueOf(seq());
+    }
 }
