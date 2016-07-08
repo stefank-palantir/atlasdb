@@ -89,7 +89,7 @@ public class PaxosProposerImpl implements PaxosProposer {
 
         final PaxosValue finalValue = prepareAndPromise(key, proposalID, toPropose);
         collectAcceptancesForProposal(key, proposalID, finalValue);
-        broadcastLearnedValue(key.seq(), finalValue);
+        broadcastLearnedValue(finalValue);
 
         return finalValue.getData();
     }
@@ -173,7 +173,7 @@ public class PaxosProposerImpl implements PaxosProposer {
         }
     }
 
-    private void broadcastLearnedValue(final long seq, final PaxosValue finalValue) {
+    private void broadcastLearnedValue(final PaxosValue finalValue) {
         for (final PaxosLearner learner : allLearners) {
             // local learner is forced to update synchronously
             if (localLearner == learner) {
@@ -184,7 +184,7 @@ public class PaxosProposerImpl implements PaxosProposer {
                 @Override
                 public void run() {
                     try {
-                        learner.learn(seq, finalValue);
+                        learner.learn(finalValue);
                     } catch (Throwable e) {
                         log.warn("failed to teach learner", e);
                     }
@@ -193,7 +193,7 @@ public class PaxosProposerImpl implements PaxosProposer {
         }
 
         // force local learner to update
-        localLearner.learn(seq, finalValue);
+        localLearner.learn(finalValue);
     }
 
     @Override

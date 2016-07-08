@@ -89,7 +89,7 @@ public class LeaderRemotingTest {
 
         learn.getGreatestLearnedValue();
         learn.getLearnedValuesSince(0);
-        learn.learn(0, value);
+        learn.learn(value);
         PaxosValue val = learn.getGreatestLearnedValue();
         learn.getLearnedValuesSince(0);
         learn.getLearnedValue(0);

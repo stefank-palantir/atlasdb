@@ -56,7 +56,9 @@ public class PaxosLearnerImpl implements PaxosLearner {
     }
 
     @Override
-    public void learn(long seq, PaxosValue val) {
+    public void learn(PaxosValue val) {
+        long seq = val.key.seq();
+
         state.put(seq, val);
         log.writeRound(seq, val);
     }

@@ -35,13 +35,12 @@ public interface PaxosLearner {
     /**
      * Learn given value for the seq-th round.
      *
-     * @param seq round in question
-     * @param val value learned for that round
+     * @param val value learned for that round (contains seq)
      */
     @POST
-    @Path("learn/{seq:.+}")
+    @Path("learn/")
     @Consumes(MediaType.APPLICATION_JSON)
-    void learn(@PathParam("seq") long seq, PaxosValue val);
+    void learn(PaxosValue val);
 
     /**
      * @return learned value or null if non-exists

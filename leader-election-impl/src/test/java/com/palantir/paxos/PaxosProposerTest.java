@@ -21,7 +21,6 @@ import static org.hamcrest.Matchers.lessThan;
 import static org.hamcrest.core.Is.is;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.argThat;
-import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -137,7 +136,7 @@ public class PaxosProposerTest {
 
         proposer.propose(KEY, VALUE);
 
-        verify(learner, atLeastOnce()).learn(SEQ, paxosValueFor(proposer));
+        verify(learner, atLeastOnce()).learn(paxosValueFor(proposer));
     }
 
     @Test public void
@@ -146,7 +145,7 @@ public class PaxosProposerTest {
 
         proposer.propose(KEY, VALUE);
 
-        verify(otherLearner, atLeastOnce()).learn(SEQ, paxosValueFor(proposer));
+        verify(otherLearner, atLeastOnce()).learn(paxosValueFor(proposer));
     }
 
     @Test public void
