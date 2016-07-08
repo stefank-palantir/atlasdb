@@ -40,3 +40,4 @@ var/data/rocksdb
 .flooignore
 
 acceptor-log
+learner-log
