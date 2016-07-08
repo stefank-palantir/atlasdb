@@ -39,3 +39,4 @@ var/data/rocksdb
 .floo
 .flooignore
 
+acceptor-log
