@@ -79,7 +79,8 @@ public class LeaderRemotingTest {
     public void testLearn() throws IOException {
         ObjectMapper mapper = new ObjectMapper();
 
-        PaxosValue value = new PaxosValue(PaxosKey.fromSeq(0), new byte[] {0, 1, 2});
+        PaxosKey key0 = PaxosKey.fromSeq(0);
+        PaxosValue value = new PaxosValue(key0, new byte[] {0, 1, 2});
 
         PaxosLearner learn = Feign.builder()
                 .decoder(new TextDelegateDecoder(new JacksonDecoder()))
@@ -88,10 +89,10 @@ public class LeaderRemotingTest {
                 .target(PaxosLearner.class, learner.baseUri().toString());
 
         learn.getGreatestLearnedValue();
-        learn.getLearnedValuesSince(0);
+        learn.getLearnedValuesSince(key0);
         learn.learn(value);
         PaxosValue val = learn.getGreatestLearnedValue();
-        learn.getLearnedValuesSince(0);
+        learn.getLearnedValuesSince(key0);
         learn.getLearnedValue(0);
 
     }

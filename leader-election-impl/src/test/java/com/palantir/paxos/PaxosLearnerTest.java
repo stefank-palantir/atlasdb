@@ -93,21 +93,21 @@ public class PaxosLearnerTest {
 
     @Test
     public void should_get_no_learned_values_if_never_learned_a_value() {
-        assertThat(learner.getLearnedValuesSince(1L), empty());
+        assertThat(learner.getLearnedValuesSince(PaxosKey.fromSeq(1L)), empty());
     }
 
     @Test
     public void should_get_no_learned_values_since_greater_value() {
         learnBlahFor(0L);
 
-        assertThat(learner.getLearnedValuesSince(1L), empty());
+        assertThat(learner.getLearnedValuesSince(PaxosKey.fromSeq(1L)), empty());
     }
 
     @Test
     public void should_get_learned_values_inclusively() {
         PaxosValue paxosValue = learnBlahFor(1L);
 
-        assertThat(learner.getLearnedValuesSince(1L), contains(paxosValue));
+        assertThat(learner.getLearnedValuesSince(PaxosKey.fromSeq(1L)), contains(paxosValue));
     }
 
     @Test
@@ -115,7 +115,7 @@ public class PaxosLearnerTest {
         PaxosValue lowerValue = learnBlahFor(0L);
         PaxosValue higherValue = learnBlahFor(2L);
 
-        assertThat(learner.getLearnedValuesSince(0L), containsInAnyOrder(lowerValue, higherValue));
+        assertThat(learner.getLearnedValuesSince(PaxosKey.fromSeq(0L)), containsInAnyOrder(lowerValue, higherValue));
     }
 
 
@@ -141,7 +141,8 @@ public class PaxosLearnerTest {
         PaxosValue higherValue = learnBlahFor(1L);
 
         PaxosLearner fromLog = PaxosLearnerImpl.newLearner(logPath);
-        assertThat(fromLog.getLearnedValuesSince(0L), containsInAnyOrder(lowerValue, higherValue));
+        long seq = 0L;
+        assertThat(fromLog.getLearnedValuesSince(PaxosKey.fromSeq(seq)), containsInAnyOrder(lowerValue, higherValue));
     }
 
     private PaxosValue learnBlahFor(long seq) {

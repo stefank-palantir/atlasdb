@@ -598,7 +598,7 @@ public class PaxosLeaderElectionService implements PingableLeader, LeaderElectio
                     @Nullable
                     public PaxosUpdate apply(@Nullable PaxosLearner learner) {
                         return new PaxosUpdate(
-                                copyOf(learner.getLearnedValuesSince(nextToLearnSeq)));
+                                copyOf(learner.getLearnedValuesSince(PaxosKey.fromSeq(nextToLearnSeq))));
                     }
                 },
                 proposer.getQuorumSize(),

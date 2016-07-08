@@ -16,7 +16,6 @@
 package com.palantir.paxos;
 
 import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -187,7 +186,7 @@ public class PaxosConsensusFastTest {
         PaxosLearnerImpl learner = (PaxosLearnerImpl)
                 ((DelegatingInvocationHandler) Proxy.getInvocationHandler(state.learner(0))).getDelegate();
         PaxosStateLog<PaxosValue> log = learner.log;
-        SortedMap<Long, PaxosValue> cache = learner.state;
+        SortedMap<PaxosKey, PaxosValue> cache = learner.state;
         log.truncate(log.getGreatestLogEntry());
         cache.clear();
         state.gainLeadership(0);
