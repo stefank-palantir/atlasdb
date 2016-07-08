@@ -21,7 +21,7 @@ import com.palantir.common.persist.Persistable;
 
 public interface PaxosStateLog<V extends Persistable & Versionable> {
 
-    public class CorruptLogFileException extends IOException {
+    class CorruptLogFileException extends IOException {
         private static final long serialVersionUID = 1L;
     }
 
@@ -31,7 +31,7 @@ public interface PaxosStateLog<V extends Persistable & Versionable> {
      * @param seq the sequence number of the round in question
      * @param round the round in question
      */
-    public void writeRound(long seq, V round);
+    void writeRound(long seq, V round);
 
     /**
      * Retrieves the round corresponding to the given sequence from disk
@@ -41,24 +41,24 @@ public interface PaxosStateLog<V extends Persistable & Versionable> {
      * @throws CorruptLogFileException if the round for the given sequence number is corrupted on
      *         disk
      */
-    public byte[] readRound(long seq) throws IOException;
+    byte[] readRound(long seq) throws IOException;
 
     /**
      * @return the sequence number of the least known log entry or {@value PaxosAcceptor#NO_LOG_ENTRY}
      * if this log has never been truncated.
      */
-    public long getLeastLogEntry();
+    long getLeastLogEntry();
 
     /**
      * @return the sequence number of the greatest known log entry or {@value PaxosAcceptor#NO_LOG_ENTRY}
      * if no entry is known
      */
-    public long getGreatestLogEntry();
+    long getGreatestLogEntry();
 
     /**
      * Deletes all rounds with sequence number less than or equal to seq.
      * @param toDeleteInclusive the upper bound sequence number (inclusive)
      */
-    public void truncate(long toDeleteInclusive);
+    void truncate(long toDeleteInclusive);
 
 }
