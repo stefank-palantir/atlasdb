@@ -145,6 +145,13 @@ public class PaxosLearnerTest {
         assertThat(fromLog.getLearnedValuesSince(PaxosInstanceId.fromSeq(seq)), containsInAnyOrder(lowerValue, higherValue));
     }
 
+    @Test
+    public void should_get_all_learned_values_multiple_values() {
+        PaxosValue firstValue = learnBlahFor(0L);
+        PaxosValue secondValue = learnBlahFor(1L);
+        assertThat(learner.getAllLearnedValues(), containsInAnyOrder(firstValue, secondValue));
+    }
+
     private PaxosValue learnBlahFor(long seq) {
         String blah = "blah" + seq;
         PaxosValue val = new PaxosValue(PaxosInstanceId.fromSeq(seq), blah.getBytes());

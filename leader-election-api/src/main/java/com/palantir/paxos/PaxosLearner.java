@@ -71,4 +71,13 @@ public interface PaxosLearner {
     @Path("learned-values-since/{instance:.+}")
     @Produces(MediaType.APPLICATION_JSON)
     Collection<PaxosValue> getLearnedValuesSince(@PathParam("instance") @Inclusive PaxosInstanceId instance);
+
+    /**
+     * @return collection of all learned values
+     */
+    @Nonnull
+    @GET
+    @Path("all-learned-values")
+    @Produces(MediaType.APPLICATION_JSON)
+    Collection<PaxosValue> getAllLearnedValues();
 }

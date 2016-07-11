@@ -106,4 +106,9 @@ public class PaxosLearnerImpl implements PaxosLearner {
         }
         return null;
     }
+
+    @Override
+    public Collection<PaxosValue> getAllLearnedValues() {
+        return state.values();
+    }
 }
