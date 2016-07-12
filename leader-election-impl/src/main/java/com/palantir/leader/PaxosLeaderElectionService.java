@@ -44,7 +44,6 @@ import com.google.common.base.Defaults;
 import com.google.common.base.Function;
 import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -59,7 +58,6 @@ import com.palantir.paxos.PaxosQuorumChecker;
 import com.palantir.paxos.PaxosResponse;
 import com.palantir.paxos.PaxosResponseImpl;
 import com.palantir.paxos.PaxosRoundFailureException;
-import com.palantir.paxos.PaxosUpdate;
 import com.palantir.paxos.PaxosValue;
 
 /**
@@ -75,7 +73,6 @@ public class PaxosLeaderElectionService implements PingableLeader, LeaderElectio
     private final ReentrantLock lock;
 
     final PaxosProposer proposer;
-    final PaxosLearner knowledge;
     final LeaderTrackingPaxosLearner leaderTrackingPaxosLearner;
 
     final Map<PingableLeader, HostAndPort> potentialLeadersToHosts;
@@ -100,7 +97,6 @@ public class PaxosLeaderElectionService implements PingableLeader, LeaderElectio
                                       long randomWaitBeforeProposingLeadership,
                                       long leaderPingResponseWaitMs) {
         this.proposer = proposer;
-        this.knowledge = knowledge;
         this.leaderTrackingPaxosLearner = new LeaderTrackingPaxosLearner(knowledge, executor);
         // XXX This map uses something that may be proxied as a key! Be very careful if making a new map from this.
         this.potentialLeadersToHosts = Collections.unmodifiableMap(potentialLeadersToHosts);
