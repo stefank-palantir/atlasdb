@@ -66,6 +66,7 @@ public interface PaxosLearner {
      * @param seq lower round cutoff for returned values
      * @return some set of learned values for rounds since the seq-th round
      */
+    @Deprecated
     @Nonnull
     @GET
     @Path("learned-values-since/{instance:.+}")

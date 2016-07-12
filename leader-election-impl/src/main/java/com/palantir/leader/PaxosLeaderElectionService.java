@@ -590,15 +590,14 @@ public class PaxosLeaderElectionService implements PingableLeader, LeaderElectio
      * @returns true if new state was learned, otherwise false
      */
     public boolean updateLearnedStateFromPeers(PaxosValue greatestLearned) {
-        final long nextToLearnSeq = greatestLearned != null ? greatestLearned.getRound().seq() + 1 : Defaults.defaultValue(long.class);
-        List<PaxosUpdate> updates = PaxosQuorumChecker.<PaxosLearner, PaxosUpdate> collectQuorumResponses(
+        List<PaxosUpdate> updates = PaxosQuorumChecker.collectQuorumResponses(
                 learners,
                 new Function<PaxosLearner, PaxosUpdate>() {
                     @Override
                     @Nullable
                     public PaxosUpdate apply(@Nullable PaxosLearner learner) {
                         return new PaxosUpdate(
-                                copyOf(learner.getLearnedValuesSince(PaxosInstanceId.fromSeq(nextToLearnSeq))));
+                                copyOf(learner.getAllLearnedValues()));
                     }
                 },
                 proposer.getQuorumSize(),
