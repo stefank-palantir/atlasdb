@@ -76,6 +76,7 @@ public class PaxosLeaderElectionService implements PingableLeader, LeaderElectio
 
     final PaxosProposer proposer;
     final PaxosLearner knowledge;
+    final LeaderTrackingPaxosLearner leaderTrackingPaxosLearner;
 
     final Map<PingableLeader, HostAndPort> potentialLeadersToHosts;
     final ImmutableList<PaxosAcceptor> acceptors;
@@ -100,6 +101,7 @@ public class PaxosLeaderElectionService implements PingableLeader, LeaderElectio
                                       long leaderPingResponseWaitMs) {
         this.proposer = proposer;
         this.knowledge = knowledge;
+        this.leaderTrackingPaxosLearner = new LeaderTrackingPaxosLearner(knowledge);
         // XXX This map uses something that may be proxied as a key! Be very careful if making a new map from this.
         this.potentialLeadersToHosts = Collections.unmodifiableMap(potentialLeadersToHosts);
         this.acceptors = copyOf(acceptors);
@@ -114,7 +116,7 @@ public class PaxosLeaderElectionService implements PingableLeader, LeaderElectio
     @Override
     public LeadershipToken blockOnBecomingLeader() throws InterruptedException {
         for (;;) {
-            PaxosValue greatestLearned = knowledge.getGreatestLearnedValue();
+            PaxosValue greatestLearned = leaderTrackingPaxosLearner.latestLeaderValue();
             LeadershipToken token = genTokenFromValue(greatestLearned);
 
             if (isLastConfirmedLeader(greatestLearned)) {
@@ -191,7 +193,7 @@ public class PaxosLeaderElectionService implements PingableLeader, LeaderElectio
     }
 
     private Optional<PingableLeader> getSuspectedLeader(boolean useNetwork) {
-        PaxosValue value = knowledge.getGreatestLearnedValue();
+        PaxosValue value = leaderTrackingPaxosLearner.latestLeaderValue();
         if (value == null) {
             return Optional.absent();
         }
@@ -322,13 +324,13 @@ public class PaxosLeaderElectionService implements PingableLeader, LeaderElectio
 
     @Override
     public boolean ping() {
-        return isLastConfirmedLeader(knowledge.getGreatestLearnedValue());
+        return isLastConfirmedLeader(leaderTrackingPaxosLearner.latestLeaderValue());
     }
 
     private void proposeLeadership(LeadershipToken token) {
         lock.lock();
         try {
-            PaxosValue value = knowledge.getGreatestLearnedValue();
+            PaxosValue value = leaderTrackingPaxosLearner.latestLeaderValue();
 
             LeadershipToken expectedToken = genTokenFromValue(value);
             if (!expectedToken.sameAs(token)) {
@@ -517,7 +519,7 @@ public class PaxosLeaderElectionService implements PingableLeader, LeaderElectio
     private StillLeadingStatus isStillLeadingInternal(LeadershipToken token) {
         Preconditions.checkNotNull(token);
 
-        final PaxosValue mostRecentValue = knowledge.getGreatestLearnedValue();
+        final PaxosValue mostRecentValue = leaderTrackingPaxosLearner.latestLeaderValue();
         final long seq = mostRecentValue.getRound().seq();
         final LeadershipToken mostRecentToken = genTokenFromValue(mostRecentValue);
 
