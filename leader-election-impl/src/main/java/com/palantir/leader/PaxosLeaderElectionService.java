@@ -335,15 +335,8 @@ public class PaxosLeaderElectionService implements PingableLeader, LeaderElectio
                 return;
             }
 
-            long seq;
-            if (value != null) {
-                seq = value.getRound().seq() + 1;
-            } else {
-                seq = Defaults.defaultValue(long.class);
-            }
-
-            leaderLog.info("Proposing leadership with sequence number " + seq);
-            PaxosInstanceId key = ImmutablePaxosInstanceId.builder().seq(seq).build();
+            PaxosInstanceId key = leaderTrackingPaxosLearner.generateNextPaxosInstanceId(value);
+            leaderLog.info("Proposing leadership with sequence number " + key.seq());
             proposer.propose(key, getUUID().getBytes(Charsets.UTF_8));
         } catch (PaxosRoundFailureException e) {
             // We have failed trying to become the leader.

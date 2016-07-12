@@ -80,4 +80,20 @@ public class LeaderTrackingPaxosLearnerTest {
         verify(knowledge).learn(NEWER_VALUE);
     }
 
+    @Test
+    public void nextPaxosInstanceIdShouldBeZeroIfPreviousValueWasNull() {
+        PaxosInstanceId paxosInstanceId = leaderTrackingPaxosLearner.generateNextPaxosInstanceId(null);
+
+        assertThat(paxosInstanceId.seq(), equalTo(0L));
+    }
+
+    @Test
+    public void nextPaxosInstanceIdShouldBeOneHigher() {
+        long lastSeq = 10;
+        PaxosValue lastValue = new PaxosValue(PaxosInstanceId.fromSeq(lastSeq), null);
+
+        PaxosInstanceId paxosInstanceId = leaderTrackingPaxosLearner.generateNextPaxosInstanceId(lastValue);
+
+        assertThat(paxosInstanceId.seq(), equalTo(lastSeq + 1));
+    }
 }

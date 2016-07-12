@@ -23,9 +23,12 @@ import java.util.concurrent.ExecutorService;
 
 import javax.annotation.Nullable;
 
+import com.google.common.base.Defaults;
 import com.google.common.base.Function;
 import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableList;
+import com.palantir.paxos.ImmutablePaxosInstanceId;
+import com.palantir.paxos.PaxosInstanceId;
 import com.palantir.paxos.PaxosLearner;
 import com.palantir.paxos.PaxosQuorumChecker;
 import com.palantir.paxos.PaxosUpdate;
@@ -43,6 +46,18 @@ public class LeaderTrackingPaxosLearner {
 
     public PaxosValue latestLeaderValue() {
         return knowledge.getGreatestLearnedValue();
+    }
+
+    public PaxosInstanceId generateNextPaxosInstanceId(PaxosValue lastValue) {
+        // TODO might be able to get lastValue from latestLeaderValue(), but need to first check for concurrency implications where this is called
+        long seq;
+        if (lastValue != null) {
+            seq = lastValue.getRound().seq() + 1;
+        } else {
+            seq = Defaults.defaultValue(long.class);
+        }
+
+        return ImmutablePaxosInstanceId.builder().seq(seq).build();
     }
 
 
