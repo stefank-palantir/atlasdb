@@ -51,6 +51,7 @@ import com.google.common.collect.Maps;
 import com.google.common.net.HostAndPort;
 import com.palantir.common.base.Throwables;
 import com.palantir.paxos.ImmutablePaxosInstanceId;
+import com.palantir.paxos.OrderedPaxosLearner;
 import com.palantir.paxos.PaxosAcceptor;
 import com.palantir.paxos.PaxosInstanceId;
 import com.palantir.paxos.PaxosLearner;
@@ -90,10 +91,10 @@ public class PaxosLeaderElectionService implements PingableLeader, LeaderElectio
     final ConcurrentMap<String, PingableLeader> uuidToServiceCache = Maps.newConcurrentMap();
 
     public PaxosLeaderElectionService(PaxosProposer proposer,
-                                      PaxosLearner knowledge,
+                                      OrderedPaxosLearner knowledge,
                                       Map<PingableLeader, HostAndPort> potentialLeadersToHosts,
                                       List<PaxosAcceptor> acceptors,
-                                      List<PaxosLearner> learners,
+                                      List<OrderedPaxosLearner> learners,
                                       ExecutorService executor,
                                       long updatePollingWaitInMs,
                                       long randomWaitBeforeProposingLeadership,

@@ -44,6 +44,7 @@ import com.palantir.atlasdb.timelock.server.modules.qualifiers.Remote;
 import com.palantir.leader.LeaderElectionService;
 import com.palantir.leader.PaxosLeaderElectionService;
 import com.palantir.leader.PingableLeader;
+import com.palantir.paxos.OrderedPaxosLearner;
 import com.palantir.paxos.PaxosAcceptor;
 import com.palantir.paxos.PaxosLearner;
 import com.palantir.paxos.PaxosProposer;
@@ -58,9 +59,9 @@ public class LeaderElectionModule {
     public LeaderElectionService leaderElectionService(
             LeaderConfig config,
             @Local PaxosProposer proposer,
-            @Local PaxosLearner learner,
+            @Local OrderedPaxosLearner learner,
             @All List<PaxosAcceptor> acceptors,
-            @All List<PaxosLearner> learners,
+            @All List<OrderedPaxosLearner> learners,
             @Remote Map<PingableLeader, HostAndPort> potentialLeaders) {
 
         return new PaxosLeaderElectionService(
@@ -111,6 +112,25 @@ public class LeaderElectionModule {
     @Local
     public PaxosLearner providePaxosLearner(LeaderConfig config) {
         return newLearner(config.learnerLogDir().getPath());
+    }
+
+    @Provides
+    @Singleton
+    @All
+    public List<OrderedPaxosLearner> provideAllOrderedPaxosLearners(@Remote Set<String> remoteLeaders, @Local OrderedPaxosLearner localLearner, Optional<SSLSocketFactory> sslSocketFactory) {
+        List<OrderedPaxosLearner> remoteLearners = AtlasDbHttpClients.createProxies(sslSocketFactory, remoteLeaders, OrderedPaxosLearner.class);
+
+        return ImmutableList.<OrderedPaxosLearner>builder()
+                .addAll(remoteLearners)
+                .add(localLearner)
+                .build();
+    }
+
+    @Provides
+    @Singleton
+    @Local
+    public OrderedPaxosLearner provideOrderedPaxosLearner(LeaderConfig config) {
+        return OrderedPaxosLearner.newLearner(newLearner(config.learnerLogDir().getPath()));
     }
 
     @Provides

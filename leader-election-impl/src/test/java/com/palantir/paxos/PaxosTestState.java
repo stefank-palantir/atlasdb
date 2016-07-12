@@ -29,11 +29,11 @@ import com.palantir.leader.LeaderElectionService.StillLeadingStatus;
 public class PaxosTestState {
     private final List<LeaderElectionService> leaders;
     private final List<PaxosAcceptor> acceptors;
-    private final List<PaxosLearner> learners;
+    private final List<? extends PaxosLearner> learners;
     private final List<AtomicBoolean> failureToggles;
     private final ExecutorService executor;
 
-    public PaxosTestState(List<LeaderElectionService> leaders, List<PaxosAcceptor> acceptors, List<PaxosLearner> learners, List<AtomicBoolean> failureToggles, ExecutorService executor) {
+    public PaxosTestState(List<LeaderElectionService> leaders, List<PaxosAcceptor> acceptors, List<? extends PaxosLearner> learners, List<AtomicBoolean> failureToggles, ExecutorService executor) {
         this.leaders = leaders;
         this.acceptors = acceptors;
         this.learners = learners;

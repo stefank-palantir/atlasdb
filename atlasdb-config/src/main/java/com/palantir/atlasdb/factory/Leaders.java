@@ -36,6 +36,7 @@ import com.palantir.atlasdb.http.NotCurrentLeaderExceptionMapper;
 import com.palantir.leader.LeaderElectionService;
 import com.palantir.leader.PaxosLeaderElectionService;
 import com.palantir.leader.PingableLeader;
+import com.palantir.paxos.OrderedPaxosLearner;
 import com.palantir.paxos.PaxosAcceptor;
 import com.palantir.paxos.PaxosAcceptorImpl;
 import com.palantir.paxos.PaxosLearner;
@@ -55,13 +56,16 @@ public class Leaders {
             LeaderConfig config) {
 
         PaxosAcceptor ourAcceptor = PaxosAcceptorImpl.newAcceptor(config.acceptorLogDir().getPath());
-        PaxosLearner ourLearner = PaxosLearnerImpl.newLearner(config.learnerLogDir().getPath());
+
+        // TODO replace with a factory method?
+        OrderedPaxosLearner ourLearner = OrderedPaxosLearner.newLearner(
+                PaxosLearnerImpl.newLearner(config.learnerLogDir().getPath()));
 
         Set<String> remoteLeaderUris = Sets.newHashSet(config.leaders());
         remoteLeaderUris.remove(config.localServer());
 
-        List<PaxosLearner> learners =
-                AtlasDbHttpClients.createProxies(sslSocketFactory, remoteLeaderUris, PaxosLearner.class);
+        List<OrderedPaxosLearner> learners =
+                AtlasDbHttpClients.createProxies(sslSocketFactory, remoteLeaderUris, OrderedPaxosLearner.class);
         learners.add(ourLearner);
 
         List<PaxosAcceptor> acceptors =

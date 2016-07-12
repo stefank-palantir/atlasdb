@@ -34,6 +34,7 @@ import com.palantir.leader.PingableLeader;
 import com.palantir.leader.proxy.SimulatingFailingServerProxy;
 import com.palantir.leader.proxy.ToggleableExceptionProxy;
 
+// TODO rename this and other PaxosConsensus*Test classes to LeadershipConsensus*Test
 public final class PaxosConsensusTestUtils {
 
     private PaxosConsensusTestUtils() {
@@ -48,7 +49,7 @@ public final class PaxosConsensusTestUtils {
                                        int quorumSize) {
         List<LeaderElectionService> leaders = Lists.newArrayList();
         List<PaxosAcceptor> acceptors = Lists.newArrayList();
-        List<PaxosLearner> learners = Lists.newArrayList();
+        List<OrderedPaxosLearner> learners = Lists.newArrayList();
         List<AtomicBoolean> failureToggles = Lists.newArrayList();
         ExecutorService executor = PTExecutors.newCachedThreadPool();
 
@@ -56,9 +57,10 @@ public final class PaxosConsensusTestUtils {
         for (int i = 0; i < numLeaders; i++) {
             failureToggles.add(new AtomicBoolean(false));
 
-            PaxosLearner learner = PaxosLearnerImpl.newLearner(getLearnerLogDir(i));
+            // TODO factory method?
+            OrderedPaxosLearner learner = OrderedPaxosLearner.newLearner(PaxosLearnerImpl.newLearner(getLearnerLogDir(i)));
             learners.add(ToggleableExceptionProxy.newProxyInstance(
-                    PaxosLearner.class,
+                    OrderedPaxosLearner.class,
                     learner,
                     failureToggles.get(i),
                     e));
@@ -83,7 +85,7 @@ public final class PaxosConsensusTestUtils {
                     learners.get(i),
                     ImmutableMap.<PingableLeader, HostAndPort>of(),
                     ImmutableList.<PaxosAcceptor> copyOf(acceptors),
-                    ImmutableList.<PaxosLearner> copyOf(learners),
+                    ImmutableList.<OrderedPaxosLearner> copyOf(learners),
                     executor,
                     0L, 0L, 0L);
             leaders.add(SimulatingFailingServerProxy.newProxyInstance(

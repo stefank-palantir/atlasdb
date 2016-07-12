@@ -19,17 +19,17 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.net.HostAndPort;
+import com.palantir.paxos.OrderedPaxosLearner;
 import com.palantir.paxos.PaxosAcceptor;
 import com.palantir.paxos.PaxosInstanceId;
-import com.palantir.paxos.PaxosLearner;
 import com.palantir.paxos.PaxosProposer;
 import com.palantir.paxos.PaxosValue;
 
 public class PaxosLeaderElectionServiceTest {
 
     private PaxosLeaderElectionService electionService;
-    private final PaxosLearner otherLearner = mock(PaxosLearner.class);
-    private final PaxosLearner knowledge = mock(PaxosLearner.class);
+    private final OrderedPaxosLearner otherLearner = mock(OrderedPaxosLearner.class);
+    private final OrderedPaxosLearner knowledge = mock(OrderedPaxosLearner.class);
     public static final PaxosValue FIRST_VALUE = new PaxosValue(PaxosInstanceId.fromSeq(0), null);
     public static final PaxosValue OTHER_VALUE = new PaxosValue(PaxosInstanceId.fromSeq(2), null);
 
@@ -38,7 +38,7 @@ public class PaxosLeaderElectionServiceTest {
         PaxosProposer proposer = mock(PaxosProposer.class);
         Map<PingableLeader, HostAndPort> potentialLeadersToHosts = ImmutableMap.of();
         List<PaxosAcceptor> acceptors = ImmutableList.of();
-        List<PaxosLearner> learners = ImmutableList.of(otherLearner);
+        List<OrderedPaxosLearner> learners = ImmutableList.of(otherLearner);
         ExecutorService executor = Executors.newSingleThreadExecutor();
         long updatePollingWainInMs = 0;
         long randomWaitBeforeProposingLeadership = 0;
