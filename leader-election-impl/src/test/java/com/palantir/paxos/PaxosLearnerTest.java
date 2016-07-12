@@ -118,7 +118,6 @@ public class PaxosLearnerTest {
         assertThat(learner.getLearnedValuesSince(PaxosInstanceId.fromSeq(0L)), containsInAnyOrder(lowerValue, higherValue));
     }
 
-
     @Test
     public void should_ensure_sequence_persists_between_objects() {
         PaxosValue toLearnFromLog = learnBlahFor(0L);
@@ -150,6 +149,15 @@ public class PaxosLearnerTest {
         PaxosValue firstValue = learnBlahFor(0L);
         PaxosValue secondValue = learnBlahFor(1L);
         assertThat(learner.getAllLearnedValues(), containsInAnyOrder(firstValue, secondValue));
+    }
+
+    @Test
+    public void should_persist_all_learned_values() {
+        PaxosValue toLearnFromLogFirst = learnBlahFor(0L);
+        PaxosValue toLearnFromLogSecond = learnBlahFor(1L);
+
+        PaxosLearner fromLog = PaxosLearnerImpl.newLearner(logPath);
+        assertThat(fromLog.getAllLearnedValues(), containsInAnyOrder(toLearnFromLogFirst, toLearnFromLogSecond) );
     }
 
     private PaxosValue learnBlahFor(long seq) {

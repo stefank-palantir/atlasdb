@@ -18,6 +18,7 @@ package com.palantir.paxos;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.SortedMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 
@@ -109,6 +110,12 @@ public class PaxosLearnerImpl implements PaxosLearner {
 
     @Override
     public Collection<PaxosValue> getAllLearnedValues() {
-        return state.values();
+        Collection<PaxosValue> values = new HashSet<>();
+        values.addAll(state.values());
+        long greatestSeq = log.getGreatestLogEntry();
+        for(long i = 0; i < greatestSeq; i++) {
+            values.add(getLearnedValue(PaxosInstanceId.fromSeq(i)));
+        }
+        return values;
     }
 }
