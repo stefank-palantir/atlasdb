@@ -49,6 +49,15 @@ public class PaxosLeaderElectionServiceTest {
     }
 
     @Test
+    public void should_recognize_if_there_are_no_new_values_to_learn() {
+        when(otherLearner.getLearnedValuesSince(any(PaxosInstanceId.class))).thenReturn(ImmutableSet.of());
+
+        boolean updated = electionService.updateLearnedStateFromPeers(FIRST_VALUE);
+
+        assertThat(updated, is(false));
+    }
+
+    @Test
     public void should_recognize_if_there_are_new_values_to_learn() {
         when(otherLearner.getLearnedValuesSince(any(PaxosInstanceId.class))).thenReturn(ImmutableSet.of(OTHER_VALUE));
 
