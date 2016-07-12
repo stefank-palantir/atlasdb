@@ -101,7 +101,7 @@ public class PaxosLeaderElectionService implements PingableLeader, LeaderElectio
                                       long leaderPingResponseWaitMs) {
         this.proposer = proposer;
         this.knowledge = knowledge;
-        this.leaderTrackingPaxosLearner = new LeaderTrackingPaxosLearner(knowledge);
+        this.leaderTrackingPaxosLearner = new LeaderTrackingPaxosLearner(knowledge, executor);
         // XXX This map uses something that may be proxied as a key! Be very careful if making a new map from this.
         this.potentialLeadersToHosts = Collections.unmodifiableMap(potentialLeadersToHosts);
         this.acceptors = copyOf(acceptors);
@@ -136,7 +136,7 @@ public class PaxosLeaderElectionService implements PingableLeader, LeaderElectio
                 }
             }
 
-            boolean learnedNewState = updateLearnedStateFromPeers(greatestLearned);
+            boolean learnedNewState = leaderTrackingPaxosLearner.updateLearnedStateFromPeers(learners, proposer.getQuorumSize());
             if (learnedNewState) {
                 continue;
             }
@@ -583,42 +583,5 @@ public class PaxosLeaderElectionService implements PingableLeader, LeaderElectio
         }
         String valueLeaderUuid = new String(value.getData(), Charsets.UTF_8);
         return valueLeaderUuid.equals(proposer.getUUID());
-    }
-
-    /**
-     * Queries all other learners for unknown learned values
-     *
-     * @param numPeersToQuery number of peer learners to query for updates
-     * @returns true if new state was learned, otherwise false
-     */
-    public boolean updateLearnedStateFromPeers(PaxosValue greatestLearned) {
-        List<PaxosUpdate> updates = PaxosQuorumChecker.collectQuorumResponses(
-                learners,
-                new Function<PaxosLearner, PaxosUpdate>() {
-                    @Override
-                    @Nullable
-                    public PaxosUpdate apply(@Nullable PaxosLearner learner) {
-                        return new PaxosUpdate(
-                                copyOf(learner.getAllLearnedValues()));
-                    }
-                },
-                proposer.getQuorumSize(),
-                executor,
-                PaxosQuorumChecker.DEFAULT_REMOTE_REQUESTS_TIMEOUT_IN_SECONDS);
-
-        // learn the state accumulated from peers
-        boolean learned = false;
-        for (PaxosUpdate update : updates) {
-            ImmutableCollection<PaxosValue> values = update.getValues();
-            for (PaxosValue value : values) {
-                PaxosValue currentLearnedValue = knowledge.getLearnedValue(value.getRound());
-                if (currentLearnedValue == null) {
-                    knowledge.learn(value);
-                    learned = true;
-                }
-            }
-        }
-
-        return learned;
     }
 }

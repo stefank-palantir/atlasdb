@@ -16,28 +16,68 @@
 
 package com.palantir.leader;
 
+import static org.hamcrest.core.Is.is;
 import static org.hamcrest.core.IsEqual.equalTo;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import org.junit.Test;
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
+import com.palantir.paxos.PaxosInstanceId;
 import com.palantir.paxos.PaxosLearner;
 import com.palantir.paxos.PaxosValue;
 
 public class LeaderTrackingPaxosLearnerTest {
+    public static final int QUORUM_SIZE = 1;
+    private final PaxosLearner otherLearner = mock(PaxosLearner.class);
+    private final PaxosLearner knowledge = mock(PaxosLearner.class);
+    public static final PaxosValue NEWER_VALUE = new PaxosValue(PaxosInstanceId.fromSeq(2), null);
+    private final ImmutableList<PaxosLearner> learners = ImmutableList.of(otherLearner);
+    private final ExecutorService executor = Executors.newSingleThreadExecutor();
+    private LeaderTrackingPaxosLearner leaderTrackingPaxosLearner = new LeaderTrackingPaxosLearner(knowledge, executor);;
 
     @Test
     public void shouldReturnLatestValueFromUnderlyingLearner() {
-        PaxosLearner knowledge = mock(PaxosLearner.class);
         PaxosValue greatestValue = mock(PaxosValue.class);
         when(knowledge.getGreatestLearnedValue()).thenReturn(greatestValue);
-        LeaderTrackingPaxosLearner leaderTrackingPaxosLearner = new LeaderTrackingPaxosLearner(knowledge);
 
         PaxosValue actual = leaderTrackingPaxosLearner.latestLeaderValue();
 
         assertThat(actual, equalTo(greatestValue));
+    }
+
+    @Test
+    public void should_recognize_if_there_are_no_new_values_to_learn() {
+        when(otherLearner.getAllLearnedValues()).thenReturn(ImmutableSet.of());
+
+        boolean updated = leaderTrackingPaxosLearner.updateLearnedStateFromPeers(learners, QUORUM_SIZE);
+
+        assertThat(updated, is(false));
+    }
+
+    @Test
+    public void should_recognize_if_there_are_new_values_to_learn() {
+        when(otherLearner.getAllLearnedValues()).thenReturn(ImmutableSet.of(NEWER_VALUE));
+
+        boolean updated = leaderTrackingPaxosLearner.updateLearnedStateFromPeers(learners, QUORUM_SIZE);
+
+        assertThat(updated, is(true));
+    }
+
+    @Test
+    public void should_update_local_knowledge_if_there_are_new_values_to_learn() {
+        when(otherLearner.getAllLearnedValues()).thenReturn(ImmutableSet.of(NEWER_VALUE));
+
+        leaderTrackingPaxosLearner.updateLearnedStateFromPeers(learners, QUORUM_SIZE);
+
+        verify(knowledge).learn(NEWER_VALUE);
     }
 
 }

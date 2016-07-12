@@ -16,19 +16,71 @@
 
 package com.palantir.leader;
 
+import static com.google.common.collect.ImmutableList.copyOf;
+
+import java.util.List;
+import java.util.concurrent.ExecutorService;
+
+import javax.annotation.Nullable;
+
+import com.google.common.base.Function;
+import com.google.common.collect.ImmutableCollection;
+import com.google.common.collect.ImmutableList;
 import com.palantir.paxos.PaxosLearner;
+import com.palantir.paxos.PaxosQuorumChecker;
+import com.palantir.paxos.PaxosUpdate;
 import com.palantir.paxos.PaxosValue;
 
 public class LeaderTrackingPaxosLearner {
 
     final PaxosLearner knowledge;
+    final ExecutorService executor;
 
-    public LeaderTrackingPaxosLearner(PaxosLearner knowledge) {
+    public LeaderTrackingPaxosLearner(PaxosLearner knowledge, ExecutorService executor) {
         this.knowledge = knowledge;
+        this.executor = executor;
     }
 
     public PaxosValue latestLeaderValue() {
         return knowledge.getGreatestLearnedValue();
+    }
+
+
+    /**
+     * Queries all other learners for unknown learned values
+     *
+     * @param numPeersToQuery number of peer learners to query for updates
+     * @returns true if new state was learned, otherwise false
+     */
+    public boolean updateLearnedStateFromPeers(ImmutableList<PaxosLearner> learners, int quorumSize) {
+        List<PaxosUpdate> updates = PaxosQuorumChecker.collectQuorumResponses(
+                learners,
+                new Function<PaxosLearner, PaxosUpdate>() {
+                    @Override
+                    @Nullable
+                    public PaxosUpdate apply(@Nullable PaxosLearner learner) {
+                        return new PaxosUpdate(
+                                copyOf(learner.getAllLearnedValues()));
+                    }
+                },
+                quorumSize,
+                executor,
+                PaxosQuorumChecker.DEFAULT_REMOTE_REQUESTS_TIMEOUT_IN_SECONDS);
+
+        // learn the state accumulated from peers
+        boolean learned = false;
+        for (PaxosUpdate update : updates) {
+            ImmutableCollection<PaxosValue> values = update.getValues();
+            for (PaxosValue value : values) {
+                PaxosValue currentLearnedValue = knowledge.getLearnedValue(value.getRound());
+                if (currentLearnedValue == null) {
+                    knowledge.learn(value);
+                    learned = true;
+                }
+            }
+        }
+
+        return learned;
     }
 
 }

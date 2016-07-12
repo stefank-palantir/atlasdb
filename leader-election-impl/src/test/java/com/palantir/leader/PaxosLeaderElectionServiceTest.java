@@ -1,7 +1,5 @@
 package com.palantir.leader;
 
-import static org.hamcrest.core.Is.is;
-import static org.junit.Assert.assertThat;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
@@ -19,23 +17,19 @@ import org.junit.Test;
 import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
 import com.google.common.net.HostAndPort;
 import com.palantir.paxos.PaxosAcceptor;
 import com.palantir.paxos.PaxosInstanceId;
 import com.palantir.paxos.PaxosLearner;
 import com.palantir.paxos.PaxosProposer;
-import com.palantir.paxos.PaxosRoundFailureException;
 import com.palantir.paxos.PaxosValue;
 
 public class PaxosLeaderElectionServiceTest {
 
-    public static final String PROPOSER_UUID = "ProposerUUID";
+    private static final String PROPOSER_UUID = "ProposerUUID";
     private PaxosLeaderElectionService electionService;
     private final PaxosLearner otherLearner = mock(PaxosLearner.class);
     private final PaxosLearner knowledge = mock(PaxosLearner.class);
-    public static final PaxosValue FIRST_VALUE = new PaxosValue(PaxosInstanceId.fromSeq(0), null);
-    public static final PaxosValue OTHER_VALUE = new PaxosValue(PaxosInstanceId.fromSeq(2), null);
     private final PaxosProposer proposer = mock(PaxosProposer.class);
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
     private PaxosAcceptor acceptor = mock(PaxosAcceptor.class);
@@ -52,33 +46,6 @@ public class PaxosLeaderElectionServiceTest {
 
         when(proposer.getQuorumSize()).thenReturn(1);
         when(proposer.getUUID()).thenReturn(PROPOSER_UUID);
-    }
-
-    @Test
-    public void should_recognize_if_there_are_no_new_values_to_learn() {
-        when(otherLearner.getAllLearnedValues()).thenReturn(ImmutableSet.of());
-
-        boolean updated = electionService.updateLearnedStateFromPeers(FIRST_VALUE);
-
-        assertThat(updated, is(false));
-    }
-
-    @Test
-    public void should_recognize_if_there_are_new_values_to_learn() {
-        when(otherLearner.getAllLearnedValues()).thenReturn(ImmutableSet.of(OTHER_VALUE));
-
-        boolean updated = electionService.updateLearnedStateFromPeers(FIRST_VALUE);
-
-        assertThat(updated, is(true));
-    }
-
-    @Test
-    public void should_update_local_knowledge_if_there_are_new_values_to_learn() {
-        when(otherLearner.getAllLearnedValues()).thenReturn(ImmutableSet.of(OTHER_VALUE));
-
-        electionService.updateLearnedStateFromPeers(FIRST_VALUE);
-
-        verify(knowledge).learn(OTHER_VALUE);
     }
 
 
