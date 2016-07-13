@@ -57,7 +57,7 @@ public class PaxosLeaderElectionServiceTest {
         when(knowledge.getGreatestLearnedValue()).thenReturn(
                 null, null,
                 null, valueAfter);
-        when(acceptor.getLatestSequencePreparedOrAccepted()).thenReturn(0L);
+        when(otherLearner.getGreatestLearnedValue()).thenReturn(valueAfter);
 
         electionService.blockOnBecomingLeader();
 
@@ -74,7 +74,7 @@ public class PaxosLeaderElectionServiceTest {
         when(knowledge.getGreatestLearnedValue()).thenReturn(
                 valueBefore, valueBefore,
                 valueBefore, valueAfter);
-        when(acceptor.getLatestSequencePreparedOrAccepted()).thenReturn(seqBefore + 1);
+        when(otherLearner.getGreatestLearnedValue()).thenReturn(valueAfter);
 
         electionService.blockOnBecomingLeader();
 

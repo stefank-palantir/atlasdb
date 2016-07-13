@@ -40,7 +40,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Charsets;
-import com.google.common.base.Defaults;
 import com.google.common.base.Function;
 import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
@@ -49,7 +48,6 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.net.HostAndPort;
 import com.palantir.common.base.Throwables;
-import com.palantir.paxos.ImmutablePaxosInstanceId;
 import com.palantir.paxos.PaxosAcceptor;
 import com.palantir.paxos.PaxosInstanceId;
 import com.palantir.paxos.PaxosLearner;
@@ -523,13 +521,13 @@ public class PaxosLeaderElectionService implements PingableLeader, LeaderElectio
         }
 
         // check if node still has quorum
-        List<PaxosResponse> responses = PaxosQuorumChecker.<PaxosAcceptor, PaxosResponse> collectQuorumResponses(
-                acceptors,
-                new Function<PaxosAcceptor, PaxosResponse>() {
+        List<PaxosResponse> responses = PaxosQuorumChecker.<PaxosLearner, PaxosResponse> collectQuorumResponses(
+                learners,
+                new Function<PaxosLearner, PaxosResponse>() {
                     @Override
                     @Nullable
-                    public PaxosResponse apply(@Nullable PaxosAcceptor acceptor) {
-                        return confirmLeader(acceptor, seq);
+                    public PaxosResponse apply(@Nullable PaxosLearner learner) {
+                        return new PaxosResponseImpl(isLastKnownSequence(learner, seq));
                     }
                 },
                 proposer.getQuorumSize(),
@@ -551,17 +549,6 @@ public class PaxosLeaderElectionService implements PingableLeader, LeaderElectio
         return StillLeadingStatus.NO_QUORUM;
     }
 
-    /**
-     * Confirms if a given sequence is still the newest according to a given acceptor
-     *
-     * @param acceptor the acceptor to check against
-     * @param seq the instance of paxos in question
-     * @return a paxos response that either confirms the leader or nacks
-     */
-    private PaxosResponse confirmLeader(PaxosAcceptor acceptor, long seq) {
-        return new PaxosResponseImpl(seq >= acceptor.getLatestSequencePreparedOrAccepted());
-    }
-
     public ImmutableList<PaxosAcceptor> getAcceptors() {
         return acceptors;
     }
@@ -572,5 +559,11 @@ public class PaxosLeaderElectionService implements PingableLeader, LeaderElectio
         }
         String valueLeaderUuid = new String(value.getData(), Charsets.UTF_8);
         return valueLeaderUuid.equals(proposer.getUUID());
+    }
+
+    private boolean isLastKnownSequence(PaxosLearner learner, long seq) {
+        PaxosValue learnedValue = learner.getGreatestLearnedValue();
+        long learnedSeq = learnedValue.getRound().seq();
+        return learnedSeq == seq;
     }
 }
