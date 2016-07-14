@@ -57,6 +57,7 @@ import com.palantir.util.Pair;
     private final byte[] endExclusive;
     private final ImmutableSortedSet<byte[]> columns;
     private final Integer batchHint;
+    private final Integer numColumns;
     private final boolean reverse;
     private transient int hashCode = 0;
 
@@ -86,11 +87,13 @@ import com.palantir.util.Pair;
                          @JsonProperty("endExclusive") byte[] endExclusive,
                          @JsonProperty("columnNames") Iterable<byte[]> cols,
                          @JsonProperty("batchHint") Integer batchHint,
+                         @JsonProperty("numColumns") Integer numColumns,
                          @JsonProperty("reverse") boolean reverse) {
         this.startInclusive = startInclusive;
         this.endExclusive = endExclusive;
         this.columns = cloneSet(cols);
         this.batchHint = batchHint;
+        this.numColumns = numColumns;
         this.reverse = reverse;
     }
 
@@ -165,7 +168,7 @@ import com.palantir.util.Pair;
     }
 
     public RangeRequest withBatchHint(int hint) {
-        return new RangeRequest(startInclusive, endExclusive, columns, hint, reverse);
+        return new RangeRequest(startInclusive, endExclusive, columns, hint, numColumns, reverse);
     }
 
     @JsonIgnore
@@ -186,6 +189,7 @@ import com.palantir.util.Pair;
             helper.add("columns", FluentIterable.from(columns).filter(Predicates.notNull()).transform(PtBytes.BYTES_TO_HEX_STRING));
         }
         helper.add("batchHint", batchHint);
+        helper.add("numColumns", numColumns);
         helper.add("reverse", reverse);
         return helper.toString();
     }
@@ -201,6 +205,7 @@ import com.palantir.util.Pair;
             final int prime = 31;
             int result = 1;
             result = prime * result + ((batchHint == null) ? 0 : batchHint.hashCode());
+            result = prime * result + ((numColumns == null) ? 0 : numColumns.hashCode());
             result = prime * result + ((columns == null) ? 0 : columns.hashCode());
             result = prime * result + Arrays.hashCode(endExclusive);
             result = prime * result + (reverse ? 1231 : 1237);
@@ -223,6 +228,11 @@ import com.palantir.util.Pair;
             if (other.batchHint != null)
                 return false;
         } else if (!batchHint.equals(other.batchHint))
+            return false;
+        if (numColumns == null) {
+            if (other.numColumns != null)
+                return false;
+        } else if (!numColumns.equals(other.numColumns))
             return false;
         if (columns == null) {
             if (other.columns != null)
@@ -278,6 +288,7 @@ import com.palantir.util.Pair;
         private byte[] endExclusive = PtBytes.EMPTY_BYTE_ARRAY;
         private Set<byte[]> columns = Sets.newTreeSet(UnsignedBytes.lexicographicalComparator());
         private Integer batchHint = null;
+        private Integer numColumns = null;
         private final boolean reverse;
 
         Builder(boolean reverse) {
@@ -356,6 +367,15 @@ import com.palantir.util.Pair;
             return this;
         }
 
+        /**
+         * Whereas batchHint is used for the number of rows to return, numColumns gives the number of columns to return.
+         */
+        public Builder numColumns(Integer count) {
+            Preconditions.checkArgument(count == null || count > 0);
+            numColumns = count;
+            return this;
+        }
+
         public boolean isInvalidRange() {
             if (startInclusive.length == 0 || endExclusive.length == 0) {
                 return false;
@@ -368,7 +388,7 @@ import com.palantir.util.Pair;
         }
 
         public RangeRequest build() {
-            RangeRequest rangeRequest = new RangeRequest(startInclusive, endExclusive, columns, batchHint, reverse);
+            RangeRequest rangeRequest = new RangeRequest(startInclusive, endExclusive, columns, batchHint, numColumns, reverse);
             if (isInvalidRange()) {
                 throw new IllegalArgumentException("Invalid range request, check row byte ordering for reverse ordered values: " + rangeRequest);
             }
