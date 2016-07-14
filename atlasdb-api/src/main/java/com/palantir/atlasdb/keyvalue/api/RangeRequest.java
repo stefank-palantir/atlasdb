@@ -167,6 +167,11 @@ import com.palantir.util.Pair;
         return batchHint;
     }
 
+    @Nullable
+    public Integer getNumColumns() {
+        return numColumns;
+    }
+
     public RangeRequest withBatchHint(int hint) {
         return new RangeRequest(startInclusive, endExclusive, columns, hint, numColumns, reverse);
     }
