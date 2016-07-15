@@ -1081,12 +1081,11 @@ public class CassandraKeyValueService extends AbstractKeyValueService {
     private <T, U> ClosableIterator<RowResult<U>> getRangeWithPageCreatorAndColumnPaging(TableReference tableRef, RangeRequest rangeRequest, long timestamp, ConsistencyLevel consistency, Supplier<ResultsExtractor<T, U>> resultsExtractor) {
         final int batchHint = rangeRequest.getBatchHint() == null ? 100 : rangeRequest.getBatchHint();
 
-        // TODO page through the columns
         SliceRange slice = new SliceRange(
                 ByteBuffer.wrap(PtBytes.EMPTY_BYTE_ARRAY),
                 ByteBuffer.wrap(PtBytes.EMPTY_BYTE_ARRAY),
                 rangeRequest.isReverse(), // reverse iff we're doing sweep
-                rangeRequest.isReverse() ? rangeRequest.getNumColumns() : Integer.MAX_VALUE);
+                rangeRequest.getNumColumns() != null ? rangeRequest.getNumColumns() : Integer.MAX_VALUE);
         final SlicePredicate pred = new SlicePredicate();
         pred.setSlice_range(slice);
 
@@ -1160,7 +1159,7 @@ public class CassandraKeyValueService extends AbstractKeyValueService {
                             public String toString() {
                                 return "get_range_slices(" + colFam + ")";
                             }
-                        };
+                        });
 
                         Map<ByteBuffer, List<ColumnOrSuperColumn>> colsByKey = CassandraKeyValueServices.getColsByKey(firstPage);
                         TokenBackedBasicResultsPage<RowResult<U>, byte[]> page =
