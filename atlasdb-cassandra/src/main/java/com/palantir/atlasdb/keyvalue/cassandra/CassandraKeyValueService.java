@@ -1118,7 +1118,7 @@ public class CassandraKeyValueService extends AbstractKeyValueService {
                          */
                         final byte[] endExclusive = rangeRequest.getEndExclusive();
 
-                        KeyRange keyRange = new KeyRange(1); // enforcing 1 row per page
+                        KeyRange keyRange = new KeyRange(1); // enforcing 1 row per page - TODO should probably do this with an assert
                         keyRange.setStart_key(startKey);
                         if (endExclusive.length == 0) {
                             keyRange.setEnd_key(endExclusive);
