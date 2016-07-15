@@ -94,6 +94,7 @@ public class SweepTaskRunnerImpl implements SweepTaskRunner {
         this.followers = followers;
     }
 
+    // TODO add Integer (nullable) for column batch size
     @Override
     public SweepResults run(TableReference tableRef, int batchSize, @Nullable byte[] startRow) {
         Preconditions.checkNotNull(tableRef);
@@ -144,7 +145,9 @@ public class SweepTaskRunnerImpl implements SweepTaskRunner {
             valueResults = keyValueService.getRange(tableRef, rangeRequest, sweepTimestamp);
         }
 
-        RangeRequest timestampsRequest = RangeRequest.reverseBuilder().startRowInclusive(startRow).numColumns(batchSize).build();
+        // TODO here we need to pass in a separate parameter for numColumns
+        int columnsPerGet = batchSize;
+        RangeRequest timestampsRequest = RangeRequest.reverseBuilder().startRowInclusive(startRow).batchHint(batchSize).numColumns(columnsPerGet).build();
 
         ClosableIterator<RowResult<Set<Long>>> rowResults =
                 keyValueService.getRangeOfTimestamps(tableRef, timestampsRequest, sweepTimestamp);
