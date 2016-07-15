@@ -1127,26 +1127,25 @@ public class CassandraKeyValueService extends AbstractKeyValueService {
                             // We need the previous name because this is inclusive, not exclusive
                             keyRange.setEnd_key(RangeRequests.previousLexicographicName(endExclusive));
                         }
-                        return clientPool.runWithRetryOnHost(host, new FunctionCheckedException<Client, TokenBackedBasicResultsPage<RowResult<U>, byte[]>, Exception>() {
+
+                        List<KeySlice> firstPage = clientPool.runWithRetryOnHost(host, new FunctionCheckedException<Client, List<KeySlice>, Exception>() {
                             @Override
-                            public TokenBackedBasicResultsPage<RowResult<U>, byte[]> apply(Client client) throws Exception {
-
-                                List<KeySlice> firstPage;
-
+                            public List<KeySlice> apply(Client client) throws Exception {
                                 try {
                                     if (shouldTraceQuery(tableRef)) {
                                         ByteBuffer recv_trace = client.trace_next_query();
                                         Stopwatch stopwatch = Stopwatch.createStarted();
 
                                         // TODO need to update this predicate each time with the end column
-                                        firstPage = client.get_range_slices(colFam, pred, keyRange, consistency);
+                                        List<KeySlice> result = client.get_range_slices(colFam, pred, keyRange, consistency);
                                         long duration = stopwatch.elapsed(TimeUnit.MILLISECONDS);
                                         if (duration > getMinimumDurationToTraceMillis()) {
                                             log.error("Traced a call to " + tableRef.getQualifiedName() + " that took " + duration + " ms."
                                                     + " It will appear in system_traces with UUID=" + CassandraKeyValueServices.convertCassandraByteBufferUUIDtoString(recv_trace));
                                         }
+                                        return result;
                                     } else {
-                                        firstPage = client.get_range_slices(colFam, pred, keyRange, consistency);
+                                        return client.get_range_slices(colFam, pred, keyRange, consistency);
                                     }
                                 } catch (UnavailableException e) {
                                     if (consistency.equals(ConsistencyLevel.ALL)) {
@@ -1155,26 +1154,25 @@ public class CassandraKeyValueService extends AbstractKeyValueService {
                                         throw e;
                                     }
                                 }
-
-                                Map<ByteBuffer, List<ColumnOrSuperColumn>> colsByKey = CassandraKeyValueServices.getColsByKey(firstPage);
-                                TokenBackedBasicResultsPage<RowResult<U>, byte[]> page =
-                                        resultsExtractor.get().getPageFromRangeResults(colsByKey, timestamp, selection, endExclusive);
-                                // TODO this is trickier - we need to check that the number of columns returned was < numColuns
-                                if (page.moreResultsAvailable() && firstPage.size() < batchHint) {
-                                    // If get_range_slices didn't return the full number of results, there's no
-                                    // point to trying to get another page
-                                    page = SimpleTokenBackedResultsPage.create(endExclusive, page.getResults(), false);
-                                }
-                                return page;
                             }
 
                             @Override
                             public String toString() {
                                 return "get_range_slices(" + colFam + ")";
                             }
-                        });
-                    }
+                        };
 
+                        Map<ByteBuffer, List<ColumnOrSuperColumn>> colsByKey = CassandraKeyValueServices.getColsByKey(firstPage);
+                        TokenBackedBasicResultsPage<RowResult<U>, byte[]> page =
+                                resultsExtractor.get().getPageFromRangeResults(colsByKey, timestamp, selection, endExclusive);
+                        // TODO this is trickier - we need to check that the number of columns returned was < numColuns
+                        if (page.moreResultsAvailable() && firstPage.size() < batchHint) {
+                            // If get_range_slices didn't return the full number of results, there's no
+                            // point to trying to get another page
+                            page = SimpleTokenBackedResultsPage.create(endExclusive, page.getResults(), false);
+                        }
+                        return page;
+                    }
                 }.iterator());
     }
 
