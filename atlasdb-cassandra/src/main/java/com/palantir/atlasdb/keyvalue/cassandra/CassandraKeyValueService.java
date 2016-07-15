@@ -1000,11 +1000,7 @@ public class CassandraKeyValueService extends AbstractKeyValueService {
         final int batchHint = rangeRequest.getBatchHint() == null ? 100 : rangeRequest.getBatchHint();
 
         // TODO page through the columns
-        SliceRange slice = new SliceRange(
-                ByteBuffer.wrap(PtBytes.EMPTY_BYTE_ARRAY),
-                ByteBuffer.wrap(PtBytes.EMPTY_BYTE_ARRAY),
-                rangeRequest.isReverse(), // reverse iff we're doing sweep
-                rangeRequest.isReverse() ? rangeRequest.getNumColumns() : Integer.MAX_VALUE);
+        SliceRange slice = new SliceRange(ByteBuffer.wrap(PtBytes.EMPTY_BYTE_ARRAY), ByteBuffer.wrap(PtBytes.EMPTY_BYTE_ARRAY), false, Integer.MAX_VALUE);
         final SlicePredicate pred = new SlicePredicate();
         pred.setSlice_range(slice);
 
@@ -1062,7 +1058,6 @@ public class CassandraKeyValueService extends AbstractKeyValueService {
                                     }
                                 }
 
-                                // TODO - is this where we actually get the columns?
                                 Map<ByteBuffer, List<ColumnOrSuperColumn>> colsByKey = CassandraKeyValueServices.getColsByKey(firstPage);
                                 TokenBackedBasicResultsPage<RowResult<U>, byte[]> page =
                                         resultsExtractor.get().getPageFromRangeResults(colsByKey, timestamp, selection, endExclusive);
