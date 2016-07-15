@@ -51,6 +51,7 @@ import org.apache.cassandra.thrift.NotFoundException;
 import org.apache.cassandra.thrift.SlicePredicate;
 import org.apache.cassandra.thrift.SliceRange;
 import org.apache.cassandra.thrift.UnavailableException;
+import org.apache.commons.lang.NotImplementedException;
 import org.apache.thrift.TException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -982,6 +983,20 @@ public class CassandraKeyValueService extends AbstractKeyValueService {
         if (rangeRequest.isEmptyRange()) {
             return ClosableIterators.wrap(ImmutableList.<RowResult<U>>of().iterator());
         }
+
+        // hacky - works because of the UnsupportedOperationException above.
+        if (rangeRequest.isReverse()) {
+            throw new NotImplementedException(); // TODO!
+        } else {
+            return getRangeWithPageCreatorInternal(tableRef, rangeRequest, timestamp, consistency, resultsExtractor);
+        }
+    }
+
+    private <T, U> ClosableIterator<RowResult<U>> getRangeWithPageCreatorInternal(final TableReference tableRef,
+                                                                                  final RangeRequest rangeRequest,
+                                                                                  final long timestamp,
+                                                                                  final ConsistencyLevel consistency,
+                                                                                  final Supplier<ResultsExtractor<T, U>> resultsExtractor) {
         final int batchHint = rangeRequest.getBatchHint() == null ? 100 : rangeRequest.getBatchHint();
 
         // TODO page through the columns
