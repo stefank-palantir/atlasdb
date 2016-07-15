@@ -144,7 +144,9 @@ public class SweepTaskRunnerImpl implements SweepTaskRunner {
             valueResults = keyValueService.getRange(tableRef, rangeRequest, sweepTimestamp);
         }
 
-        RangeRequest timestampsRequest = RangeRequest.reverseBuilder().startRowInclusive(startRow).batchHint(batchSize).numColumns(columnsPerBatch).build();
+        RangeRequest timestampsRequest = columnsPerBatch != null
+                ? RangeRequest.reverseBuilder().startRowInclusive(startRow).batchHint(batchSize).numColumns(columnsPerBatch).build()
+                : rangeRequest;
 
         ClosableIterator<RowResult<Set<Long>>> rowResults =
                 keyValueService.getRangeOfTimestamps(tableRef, timestampsRequest, sweepTimestamp);
