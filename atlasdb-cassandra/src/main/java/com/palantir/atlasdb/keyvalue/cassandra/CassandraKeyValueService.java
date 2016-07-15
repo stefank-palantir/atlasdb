@@ -986,7 +986,7 @@ public class CassandraKeyValueService extends AbstractKeyValueService {
 
         // hacky - works because of the UnsupportedOperationException above.
         if (rangeRequest.isReverse()) {
-            throw new NotImplementedException(); // TODO!
+            return getRangeWithPageCreatorAndColumnPaging(tableRef, rangeRequest, timestamp, consistency, resultsExtractor);
         } else {
             return getRangeWithPageCreatorInternal(tableRef, rangeRequest, timestamp, consistency, resultsExtractor);
         }
@@ -997,6 +997,94 @@ public class CassandraKeyValueService extends AbstractKeyValueService {
                                                                                   final long timestamp,
                                                                                   final ConsistencyLevel consistency,
                                                                                   final Supplier<ResultsExtractor<T, U>> resultsExtractor) {
+        final int batchHint = rangeRequest.getBatchHint() == null ? 100 : rangeRequest.getBatchHint();
+
+        // TODO page through the columns
+        SliceRange slice = new SliceRange(
+                ByteBuffer.wrap(PtBytes.EMPTY_BYTE_ARRAY),
+                ByteBuffer.wrap(PtBytes.EMPTY_BYTE_ARRAY),
+                rangeRequest.isReverse(), // reverse iff we're doing sweep
+                rangeRequest.isReverse() ? rangeRequest.getNumColumns() : Integer.MAX_VALUE);
+        final SlicePredicate pred = new SlicePredicate();
+        pred.setSlice_range(slice);
+
+        final ColumnParent colFam = new ColumnParent(internalTableName(tableRef));
+        final ColumnSelection selection = rangeRequest.getColumnNames().isEmpty() ? ColumnSelection.all()
+                : ColumnSelection.create(rangeRequest.getColumnNames());
+        return ClosableIterators.wrap(
+                new AbstractPagingIterable<RowResult<U>, TokenBackedBasicResultsPage<RowResult<U>, byte[]>>() {
+                    @Override
+                    protected TokenBackedBasicResultsPage<RowResult<U>, byte[]> getFirstPage() throws Exception {
+                        return page(rangeRequest.getStartInclusive());
+                    }
+
+                    @Override
+                    protected TokenBackedBasicResultsPage<RowResult<U>, byte[]> getNextPage(TokenBackedBasicResultsPage<RowResult<U>, byte[]> previous) throws Exception {
+                        return page(previous.getTokenForNextPage());
+                    }
+
+                    TokenBackedBasicResultsPage<RowResult<U>, byte[]> page(final byte[] startKey) throws Exception {
+                        InetSocketAddress host = clientPool.getRandomHostForKey(startKey);
+                        return clientPool.runWithRetryOnHost(host, new FunctionCheckedException<Client, TokenBackedBasicResultsPage<RowResult<U>, byte[]>, Exception>() {
+                            @Override
+                            public TokenBackedBasicResultsPage<RowResult<U>, byte[]> apply(Client client) throws Exception {
+                                final byte[] endExclusive = rangeRequest.getEndExclusive();
+
+                                KeyRange keyRange = new KeyRange(batchHint);
+                                keyRange.setStart_key(startKey);
+                                if (endExclusive.length == 0) {
+                                    keyRange.setEnd_key(endExclusive);
+                                } else {
+                                    // We need the previous name because this is inclusive, not exclusive
+                                    keyRange.setEnd_key(RangeRequests.previousLexicographicName(endExclusive));
+                                }
+
+                                List<KeySlice> firstPage;
+
+                                try {
+                                    if (shouldTraceQuery(tableRef)) {
+                                        ByteBuffer recv_trace = client.trace_next_query();
+                                        Stopwatch stopwatch = Stopwatch.createStarted();
+                                        firstPage = client.get_range_slices(colFam, pred, keyRange, consistency);
+                                        long duration = stopwatch.elapsed(TimeUnit.MILLISECONDS);
+                                        if (duration > getMinimumDurationToTraceMillis()) {
+                                            log.error("Traced a call to " + tableRef.getQualifiedName() + " that took " + duration + " ms."
+                                                    + " It will appear in system_traces with UUID=" + CassandraKeyValueServices.convertCassandraByteBufferUUIDtoString(recv_trace));
+                                        }
+                                    } else {
+                                        firstPage = client.get_range_slices(colFam, pred, keyRange, consistency);
+                                    }
+                                } catch (UnavailableException e) {
+                                    if (consistency.equals(ConsistencyLevel.ALL)) {
+                                        throw new InsufficientConsistencyException("This operation requires all Cassandra nodes to be up and available.", e);
+                                    } else {
+                                        throw e;
+                                    }
+                                }
+
+                                // TODO - is this where we actually get the columns?
+                                Map<ByteBuffer, List<ColumnOrSuperColumn>> colsByKey = CassandraKeyValueServices.getColsByKey(firstPage);
+                                TokenBackedBasicResultsPage<RowResult<U>, byte[]> page =
+                                        resultsExtractor.get().getPageFromRangeResults(colsByKey, timestamp, selection, endExclusive);
+                                if (page.moreResultsAvailable() && firstPage.size() < batchHint) {
+                                    // If get_range_slices didn't return the full number of results, there's no
+                                    // point to trying to get another page
+                                    page = SimpleTokenBackedResultsPage.create(endExclusive, page.getResults(), false);
+                                }
+                                return page;
+                            }
+
+                            @Override
+                            public String toString() {
+                                return "get_range_slices(" + colFam + ")";
+                            }
+                        });
+                    }
+
+                }.iterator());
+    }
+
+    private <T, U> ClosableIterator<RowResult<U>> getRangeWithPageCreatorAndColumnPaging(TableReference tableRef, RangeRequest rangeRequest, long timestamp, ConsistencyLevel consistency, Supplier<ResultsExtractor<T, U>> resultsExtractor) {
         final int batchHint = rangeRequest.getBatchHint() == null ? 100 : rangeRequest.getBatchHint();
 
         // TODO page through the columns
