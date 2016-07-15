@@ -1117,19 +1117,19 @@ public class CassandraKeyValueService extends AbstractKeyValueService {
 
                         If the batch size is 1 (as in the internal case we're interested in), then we might as well do the easier solution, as the speed is the same.
                          */
+                        final byte[] endExclusive = rangeRequest.getEndExclusive();
+
+                        KeyRange keyRange = new KeyRange(1); // enforcing 1 row per page
+                        keyRange.setStart_key(startKey);
+                        if (endExclusive.length == 0) {
+                            keyRange.setEnd_key(endExclusive);
+                        } else {
+                            // We need the previous name because this is inclusive, not exclusive
+                            keyRange.setEnd_key(RangeRequests.previousLexicographicName(endExclusive));
+                        }
                         return clientPool.runWithRetryOnHost(host, new FunctionCheckedException<Client, TokenBackedBasicResultsPage<RowResult<U>, byte[]>, Exception>() {
                             @Override
                             public TokenBackedBasicResultsPage<RowResult<U>, byte[]> apply(Client client) throws Exception {
-                                final byte[] endExclusive = rangeRequest.getEndExclusive();
-
-                                KeyRange keyRange = new KeyRange(1); // enforcing 1 row per page
-                                keyRange.setStart_key(startKey);
-                                if (endExclusive.length == 0) {
-                                    keyRange.setEnd_key(endExclusive);
-                                } else {
-                                    // We need the previous name because this is inclusive, not exclusive
-                                    keyRange.setEnd_key(RangeRequests.previousLexicographicName(endExclusive));
-                                }
 
                                 List<KeySlice> firstPage;
 
