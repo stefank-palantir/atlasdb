@@ -181,7 +181,8 @@ public class BackgroundSweeperImpl implements BackgroundSweeper {
         int batchSize = Math.max(1, (int) (sweepBatchSize.get() * batchSizeMultiplier));
         Stopwatch watch = Stopwatch.createStarted();
         try {
-            SweepResults results = sweepRunner.run(TableReference.createUnsafe(progress.getFullTableName()), batchSize, progress.getStartRow());
+            // Let's not do column-paging yet for background sweep
+            SweepResults results = sweepRunner.run(TableReference.createUnsafe(progress.getFullTableName()), batchSize, null, progress.getStartRow());
             log.debug("Swept {} unique cells from {} starting at {} and performed {} deletions in {} ms up to timestamp {}.",
                     results.getCellsExamined(), progress.getFullTableName(),
                     progress.getStartRow() == null ? "0" : PtBytes.encodeHexString(progress.getStartRow()),

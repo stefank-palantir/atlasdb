@@ -94,9 +94,8 @@ public class SweepTaskRunnerImpl implements SweepTaskRunner {
         this.followers = followers;
     }
 
-    // TODO add Integer (nullable) for column batch size
     @Override
-    public SweepResults run(TableReference tableRef, int batchSize, @Nullable byte[] startRow) {
+    public SweepResults run(TableReference tableRef, int batchSize, @Nullable Integer columnsPerBatch, @Nullable byte[] startRow) {
         Preconditions.checkNotNull(tableRef);
         Preconditions.checkState(!AtlasDbConstants.hiddenTables.contains(tableRef));
 
@@ -145,9 +144,7 @@ public class SweepTaskRunnerImpl implements SweepTaskRunner {
             valueResults = keyValueService.getRange(tableRef, rangeRequest, sweepTimestamp);
         }
 
-        // TODO here we need to pass in a separate parameter for numColumns
-        int columnsPerGet = batchSize;
-        RangeRequest timestampsRequest = RangeRequest.reverseBuilder().startRowInclusive(startRow).batchHint(batchSize).numColumns(columnsPerGet).build();
+        RangeRequest timestampsRequest = RangeRequest.reverseBuilder().startRowInclusive(startRow).batchHint(batchSize).numColumns(columnsPerBatch).build();
 
         ClosableIterator<RowResult<Set<Long>>> rowResults =
                 keyValueService.getRangeOfTimestamps(tableRef, timestampsRequest, sweepTimestamp);
