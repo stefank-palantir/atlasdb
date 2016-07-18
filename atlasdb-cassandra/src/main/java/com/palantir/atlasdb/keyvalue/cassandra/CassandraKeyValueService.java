@@ -51,7 +51,6 @@ import org.apache.cassandra.thrift.NotFoundException;
 import org.apache.cassandra.thrift.SlicePredicate;
 import org.apache.cassandra.thrift.SliceRange;
 import org.apache.cassandra.thrift.UnavailableException;
-import org.apache.commons.lang.NotImplementedException;
 import org.apache.thrift.TException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -1127,41 +1126,63 @@ public class CassandraKeyValueService extends AbstractKeyValueService {
                             keyRange.setEnd_key(RangeRequests.previousLexicographicName(endExclusive));
                         }
 
-                        List<KeySlice> firstPage = clientPool.runWithRetryOnHost(host, new FunctionCheckedException<Client, List<KeySlice>, Exception>() {
-                            @Override
-                            public List<KeySlice> apply(Client client) throws Exception {
-                                try {
-                                    if (shouldTraceQuery(tableRef)) {
-                                        ByteBuffer recv_trace = client.trace_next_query();
-                                        Stopwatch stopwatch = Stopwatch.createStarted();
+                        boolean shouldGetNextPage = true;
+                        List<KeySlice> firstPage = Collections.EMPTY_LIST;
+                        Map<ByteBuffer, List<ColumnOrSuperColumn>> colsByKey = Collections.EMPTY_MAP;
+                        while (shouldGetNextPage) {
+                            firstPage = clientPool.runWithRetryOnHost(host, new FunctionCheckedException<Client, List<KeySlice>, Exception>() {
+                                @Override
+                                public List<KeySlice> apply(Client client) throws Exception {
+                                    try {
+                                        if (shouldTraceQuery(tableRef)) {
+                                            ByteBuffer recv_trace = client.trace_next_query();
+                                            Stopwatch stopwatch = Stopwatch.createStarted();
 
-                                        // TODO need to update this predicate each time with the end column
-                                        List<KeySlice> result = client.get_range_slices(colFam, pred, keyRange, consistency);
-                                        long duration = stopwatch.elapsed(TimeUnit.MILLISECONDS);
-                                        if (duration > getMinimumDurationToTraceMillis()) {
-                                            log.error("Traced a call to " + tableRef.getQualifiedName() + " that took " + duration + " ms."
-                                                    + " It will appear in system_traces with UUID=" + CassandraKeyValueServices.convertCassandraByteBufferUUIDtoString(recv_trace));
+                                            List<KeySlice> result = client.get_range_slices(colFam, pred, keyRange, consistency);
+                                            long duration = stopwatch.elapsed(TimeUnit.MILLISECONDS);
+                                            if (duration > getMinimumDurationToTraceMillis()) {
+                                                log.error("Traced a call to " + tableRef.getQualifiedName() + " that took " + duration + " ms."
+                                                        + " It will appear in system_traces with UUID=" + CassandraKeyValueServices.convertCassandraByteBufferUUIDtoString(recv_trace));
+                                            }
+                                            return result;
+                                        } else {
+                                            return client.get_range_slices(colFam, pred, keyRange, consistency);
                                         }
-                                        return result;
-                                    } else {
-                                        return client.get_range_slices(colFam, pred, keyRange, consistency);
+                                    } catch (UnavailableException e) {
+                                        if (consistency.equals(ConsistencyLevel.ALL)) {
+                                            throw new InsufficientConsistencyException("This operation requires all Cassandra nodes to be up and available.", e);
+                                        } else {
+                                            throw e;
+                                        }
                                     }
-                                } catch (UnavailableException e) {
-                                    if (consistency.equals(ConsistencyLevel.ALL)) {
-                                        throw new InsufficientConsistencyException("This operation requires all Cassandra nodes to be up and available.", e);
-                                    } else {
-                                        throw e;
-                                    }
+                                }
+
+                                @Override
+                                public String toString() {
+                                    return "get_range_slices(" + colFam + ")";
+                                }
+                            });
+                            Map<ByteBuffer, List<ColumnOrSuperColumn>> colsByKeyCurrent = (CassandraKeyValueServices.getColsByKey(firstPage));
+
+                            for (Map.Entry<ByteBuffer, List<ColumnOrSuperColumn>> entry : colsByKeyCurrent.entrySet()) {
+                                List<ColumnOrSuperColumn> columnsForCurrentKey = colsByKey.get(entry.getKey());
+                                if (columnsForCurrentKey == null) {
+                                    colsByKey.put(entry.getKey(), entry.getValue());
+                                } else {
+                                    columnsForCurrentKey.addAll(entry.getValue());
+                                    colsByKey.put(entry.getKey(), columnsForCurrentKey);
                                 }
                             }
 
-                            @Override
-                            public String toString() {
-                                return "get_range_slices(" + colFam + ")";
+                            List<ColumnOrSuperColumn> columns = firstPage.get(0).columns;
+                            if (columns.size() < rangeRequest.getNumColumns()) {
+                                shouldGetNextPage = false;
+                            } else {
+                                slice.setStart(Iterables.getLast(columns).getColumn().name);
+                                pred.setSlice_range(slice);
                             }
-                        });
+                        }
 
-                        Map<ByteBuffer, List<ColumnOrSuperColumn>> colsByKey = CassandraKeyValueServices.getColsByKey(firstPage);
                         TokenBackedBasicResultsPage<RowResult<U>, byte[]> page =
                                 resultsExtractor.get().getPageFromRangeResults(colsByKey, timestamp, selection, endExclusive);
                         // TODO this is trickier - we need to check that the number of columns returned was < numColuns
