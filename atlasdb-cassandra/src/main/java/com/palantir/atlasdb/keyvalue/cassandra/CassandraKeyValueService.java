@@ -1077,8 +1077,17 @@ public class CassandraKeyValueService extends AbstractKeyValueService {
                 }.iterator());
     }
 
+    /* TODO
+    Below is the easier, but slow, implementation: go one row at a time (keyRange.batchHint = 1) and have a nested page that goes through the columns
+    Harder, but faster (?), implementation: go R rows and C columns at a time. Get one batch per row.
+    This batch will contain n_1, n_2, ..., n_R columns for rows 1, 2, ... R.
+    If n_i < C for each row, we're done (this will be the normal case)
+    Otherwise, for each row i where n_i = C, we have to go further. Then we get next pages for those particular rows, and combine the results
+
+    If the batch size is 1 (as in the internal case we're interested in), then we might as well do the easier solution, as the speed is the same.
+     */
     private <T, U> ClosableIterator<RowResult<U>> getRangeWithPageCreatorAndColumnPaging(TableReference tableRef, RangeRequest rangeRequest, long timestamp, ConsistencyLevel consistency, Supplier<ResultsExtractor<T, U>> resultsExtractor) {
-        final int batchHint = rangeRequest.getBatchHint() == null ? 100 : rangeRequest.getBatchHint();
+        final int batchHint = 1; //enforce one row per page
 
         SliceRange slice = new SliceRange(
                 ByteBuffer.wrap(PtBytes.EMPTY_BYTE_ARRAY),
@@ -1106,18 +1115,9 @@ public class CassandraKeyValueService extends AbstractKeyValueService {
                     TokenBackedBasicResultsPage<RowResult<U>, byte[]> page(final byte[] startKey) throws Exception {
                         InetSocketAddress host = clientPool.getRandomHostForKey(startKey);
 
-                        /* TODO
-                        Easier, but slow, implementation: go one row at a time (keyRange.batchHint = 1) and have a nested page that goes through the columns
-                        Harder, but faster (?), implementation: go R rows and C columns at a time. Get one batch per row.
-                        This batch will contain n_1, n_2, ..., n_R columns for rows 1, 2, ... R.
-                        If n_i < C for each row, we're done (this will be the normal case)
-                        Otherwise, for each row i where n_i = C, we have to go further. Then we get next pages for those particular rows, and combine the results
-
-                        If the batch size is 1 (as in the internal case we're interested in), then we might as well do the easier solution, as the speed is the same.
-                         */
                         final byte[] endExclusive = rangeRequest.getEndExclusive();
 
-                        KeyRange keyRange = new KeyRange(1); // enforcing 1 row per page - TODO should probably do this with an assert
+                        KeyRange keyRange = new KeyRange(batchHint);
                         keyRange.setStart_key(startKey);
                         if (endExclusive.length == 0) {
                             keyRange.setEnd_key(endExclusive);
@@ -1170,7 +1170,6 @@ public class CassandraKeyValueService extends AbstractKeyValueService {
                                     colsByKey.put(entry.getKey(), entry.getValue());
                                 } else {
                                     columnsForCurrentKey.addAll(entry.getValue());
-                                    colsByKey.put(entry.getKey(), columnsForCurrentKey);
                                 }
                             }
 
@@ -1185,7 +1184,7 @@ public class CassandraKeyValueService extends AbstractKeyValueService {
 
                         TokenBackedBasicResultsPage<RowResult<U>, byte[]> page =
                                 resultsExtractor.get().getPageFromRangeResults(colsByKey, timestamp, selection, endExclusive);
-                        // TODO this is trickier - we need to check that the number of columns returned was < numColuns
+
                         if (page.moreResultsAvailable() && firstPage.size() < batchHint) {
                             // If get_range_slices didn't return the full number of results, there's no
                             // point to trying to get another page
