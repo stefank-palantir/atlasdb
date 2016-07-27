@@ -15,12 +15,23 @@
  */
 package com.palantir.atlasdb.sweep;
 
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
+import java.util.SortedMap;
+import java.util.TreeMap;
+import java.util.function.Consumer;
 
 import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
+import com.palantir.atlasdb.encoding.PtBytes;
+import com.palantir.atlasdb.keyvalue.api.Cell;
+import com.palantir.atlasdb.keyvalue.api.ColumnRangeSelection;
 import com.palantir.atlasdb.keyvalue.api.KeyValueService;
 import com.palantir.atlasdb.keyvalue.api.RangeRequest;
+import com.palantir.atlasdb.keyvalue.api.RowColumnRangeIterator;
 import com.palantir.atlasdb.keyvalue.api.RowResult;
 import com.palantir.atlasdb.keyvalue.api.TableReference;
 import com.palantir.atlasdb.keyvalue.api.Value;
@@ -50,7 +61,50 @@ public class ConservativeSweepStrategySweeper implements SweepStrategySweeper {
 
     @Override
     public ClosableIterator<RowResult<Set<Long>>> getCellTimestamps(TableReference tableReference, RangeRequest rangeRequest, long timestamp) {
-        return keyValueService.getRangeOfTimestamps(tableReference, rangeRequest, timestamp);
+        ClosableIterator<RowResult<Value>> range = keyValueService.getRange(tableReference, rangeRequest, timestamp);
+
+        Set<byte[]> rowNames = new HashSet<>();
+        for (RowResult<Value> rowResult : range.items()) {
+            rowNames.add(rowResult.getRowName());
+        }
+
+        // TODO null?
+        ColumnRangeSelection columnRangeSelection = new ColumnRangeSelection(PtBytes.EMPTY_BYTE_ARRAY, PtBytes.EMPTY_BYTE_ARRAY, 1);
+
+        // let's pretend the key here is a row
+        // TODO we want something more like keyValueService.getRowsColumnRangeHistory(...)
+        Map<byte[], RowColumnRangeIterator> rowsColumnRange = keyValueService.getRowsColumnRange(tableReference, rowNames, columnRangeSelection, timestamp);
+
+
+        Set<RowResult<Set<Long>>> rowResults = new HashSet<>();
+
+        for (byte[] row : rowsColumnRange.keySet()) {
+            RowColumnRangeIterator rowColumnRangeIterator = rowsColumnRange.get(row);
+
+            SortedMap<byte[], Set<Long>> columnToTimestamp = new TreeMap<>();
+
+            // TODO is this the right way to use this iterator???
+            rowColumnRangeIterator.forEachRemaining(new Consumer<Map.Entry<Cell, Value>>() {
+                @Override
+                public void accept(Map.Entry<Cell, Value> cellValueEntry) {
+                    long currentTimestamp = cellValueEntry.getValue().getTimestamp();
+                    Cell currentCell = cellValueEntry.getKey();
+
+                    // TODO This needs to be a set, so we get all historical timestamps!
+                    columnToTimestamp.put(currentCell.getColumnName(), ImmutableSet.of(currentTimestamp));
+
+                }
+            });
+
+
+            rowResults.add(RowResult.create(row, columnToTimestamp));
+        }
+
+
+        return ClosableIterators.wrap(rowResults.iterator());
+
+
+//        return keyValueService.getRangeOfTimestamps(tableReference, rangeRequest, timestamp);
     }
 
     @Override
