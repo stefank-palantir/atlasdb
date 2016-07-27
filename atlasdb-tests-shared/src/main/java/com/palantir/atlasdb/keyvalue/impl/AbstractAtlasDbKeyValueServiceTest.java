@@ -28,6 +28,7 @@ import static org.junit.Assume.assumeTrue;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -49,6 +50,7 @@ import com.google.common.collect.Iterators;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Multimaps;
+import com.google.common.collect.Sets;
 import com.google.common.primitives.UnsignedBytes;
 import com.palantir.atlasdb.AtlasDbConstants;
 import com.palantir.atlasdb.encoding.PtBytes;
@@ -178,6 +180,33 @@ public abstract class AbstractAtlasDbKeyValueServiceTest {
             results.put(result.getKey(), result.getValue());
         }
         return results;
+    }
+
+    @Test
+    public void doesGetRowsColumnRangeReturnHistoricalValues() {
+
+        Map<Cell, byte[]> values0 = new HashMap<Cell, byte[]>();
+        values0.put(Cell.create(row0, column0), value00);
+        keyValueService.put(TEST_TABLE, values0, 10);
+
+
+        Map<Cell, byte[]> values1 = new HashMap<Cell, byte[]>();
+        values1.put(Cell.create(row0, column0), value01);
+        keyValueService.put(TEST_TABLE, values1, 20);
+
+        Map<byte[], RowColumnRangeIterator> values = keyValueService.getRowsColumnRange(TEST_TABLE,
+                ImmutableList.of(row0),
+                new ColumnRangeSelection(PtBytes.EMPTY_BYTE_ARRAY, PtBytes.EMPTY_BYTE_ARRAY, 10),
+                30);
+
+        for (Entry<byte[], RowColumnRangeIterator> rowColumnRangeIteratorEntry : values.entrySet()) {
+            System.out.println("row: " + PtBytes.toString(rowColumnRangeIteratorEntry.getKey()));
+
+            HashSet<Entry<Cell, Value>> entries = Sets.newHashSet(rowColumnRangeIteratorEntry.getValue());
+            System.out.println("number of entries = " + entries.size());
+            System.out.println("the values are: " + entries);
+        }
+
     }
 
     @Test
