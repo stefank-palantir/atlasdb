@@ -1,6 +1,10 @@
 apply from: "../gradle/shared.gradle"
 apply plugin: 'groovy'
 
+apply plugin: 'application'
+mainClassName = 'com.palantir.atlasdb.console.AtlasConsoleMain'
+applicationName = 'atlasDBConsole'
+
 dependencies {
     compile project(':atlasdb-service')
     compile('org.fusesource.jansi:jansi:1.11')
@@ -13,6 +17,20 @@ dependencies {
     }
     testCompile('org.jmock:jmock:' + libVersions.jmock)
     testCompile('org.gmock:gmock:0.8.3')
+
+    runtime(project(':atlasdb-cassandra')) {
+        exclude(module:'log4j-over-slf4j')
+        exclude(module:'jcl-over-slf4j')
+        exclude(module:'json-simple')
+        exclude(module:'metrics-core')
+        exclude(module:'logback-core')
+        exclude(module:'logback-classic')
+        exclude(module:'joda-time')
+        exclude(module:'snakeyaml')
+        exclude(module:'hibernate-validator')
+        exclude(module:'commons-cli')
+    }
+
 }
 
 configurations.matching({ it.name in ['compile', 'runtime'] }).all {
