@@ -1,6 +1,7 @@
 include ":atlasdb-api"
 include ":atlasdb-cassandra"
 include ":atlasdb-cassandra-integration-tests"
+include ":atlasdb-cassandra-more-integration-tests"
 include ":atlasdb-cassandra-multinode-tests"
 include ":atlasdb-cli"
 include ":atlasdb-client"
