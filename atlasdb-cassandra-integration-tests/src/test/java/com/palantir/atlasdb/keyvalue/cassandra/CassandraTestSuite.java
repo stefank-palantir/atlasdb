@@ -59,7 +59,7 @@ public class CassandraTestSuite {
 
     public static final int THRIFT_PORT_NUMBER = 9160;
     public static final DockerComposeRule docker = DockerComposeRule.builder()
-            .file("src/test/resources/docker-compose.yml")
+            .file("../atlasdb-cassandra-integration-tests/" + "src/test/resources/docker-compose.yml")
             .waitingForHostNetworkedPort(THRIFT_PORT_NUMBER, toBeOpen())
             .saveLogsTo("container-logs")
             .build();
