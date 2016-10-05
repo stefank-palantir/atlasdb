@@ -8,13 +8,13 @@ function checkDocsBuild {
 }
 
 # Container 1
-CONTAINER_1=(':atlasdb-cassandra-integration-tests:check -D:atlasdb-cassandra-integration-tests:test.single=Suite1' ':atlasdb-tests-shared:check' ':atlasdb-ete-test-utils:check' ':atlasdb-cassandra:check' ':atlasdb-api:check')
+CONTAINER_1=(':atlasdb-cassandra-integration-tests:check -D:atlasdb-cassandra-integration-tests:test.single=Suite1' ':atlasdb-tests-shared:check' ':atlasdb-ete-test-utils:check')
 
 # Container 2
-CONTAINER_2=(':atlasdb-ete-tests:check')
+CONTAINER_2=(':atlasdb-ete-tests:check' ':atlasdb-cassandra:check' ':atlasdb-api:check')
 
 #Container 3
-CONTAINER_3=(':atlasdb-cassandra-integration-tests:check -D:atlasdb-cassandra-integration-tests:test.single=Suite2' ':atlasdb-timelock-ete:check' ':lock-impl:check' ':atlasdb-dbkvs-tests:check' )
+CONTAINER_3=(':atlasdb-cassandra-integration-tests:check -D:atlasdb-cassandra-integration-tests:test.single=Suite2' ':lock-impl:check' ':atlasdb-dbkvs-tests:check' )
 
 CONTAINER_4=(':atlasdb-dropwizard-tests:check')
 
