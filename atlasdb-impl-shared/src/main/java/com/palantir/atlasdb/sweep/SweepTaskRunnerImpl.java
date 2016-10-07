@@ -77,6 +77,7 @@ import com.palantir.common.base.ClosableIterator;
  */
 public class SweepTaskRunnerImpl implements SweepTaskRunner {
     private static final Logger log = LoggerFactory.getLogger(SweepTaskRunnerImpl.class);
+    public static final int CELL_BATCH_SIZE = 1;
 
     private final TransactionManager txManager;
     private final KeyValueService keyValueService;
@@ -153,27 +154,35 @@ public class SweepTaskRunnerImpl implements SweepTaskRunner {
             BatchingVisitable<CellAndTimestamps> cellAndTimestampsBatchingVisitable = BatchingVisitableFromIterable
                     .create(getTimestampsFromRowResultsIterator(rowResultTimestamps, sweeper));
 
-            final AtomicInteger cellsSwept = new AtomicInteger(0);
+            final AtomicInteger totalCellsSwept = new AtomicInteger(0);
             cellAndTimestampsBatchingVisitable.batchAccept(
-                    1,
+                    CELL_BATCH_SIZE,
                     cellAndTimestampsList -> {
                         Multimap<Cell, Long> rowTimestamps = convertToMultimap(cellAndTimestampsList);
-                        CellsAndSentinels cellsAndSentinels = getStartTimestampsPerRowToSweep(
-                                rowTimestamps, peekingValues, sweepTs, sweeper);
-
-                        Multimap<Cell, Long> startTimestampsToSweepPerCell =
-                                cellsAndSentinels.startTimestampsToSweepPerCell();
-                        sweepCells(tableRef, startTimestampsToSweepPerCell, cellsAndSentinels.sentinelsToAdd());
-
-                        cellsSwept.addAndGet(startTimestampsToSweepPerCell.size());
-
+                        int cellsSwept = sweepForCells(rowTimestamps, tableRef, sweeper, sweepTs, peekingValues);
+                        totalCellsSwept.addAndGet(cellsSwept);
                         return true;
                     });
 
             byte[] nextRow = rowResultTimestamps.size() < batchSize ? null :
                 RangeRequests.getNextStartRow(false, Iterables.getLast(rowResultTimestamps).getRowName());
-            return new SweepResults(nextRow, rowResultTimestamps.size(), cellsSwept.get(), sweepTs);
+            return new SweepResults(nextRow, rowResultTimestamps.size(), totalCellsSwept.get(), sweepTs);
         }
+    }
+
+    private int sweepForCells(
+            Multimap<Cell, Long> rowTimestamps,
+            TableReference tableRef,
+            Sweeper sweeper,
+            long sweepTs,
+            PeekingIterator<RowResult<Value>> peekingValues) {
+        CellsAndSentinels cellsAndSentinels = getStartTimestampsPerRowToSweep(
+                rowTimestamps, peekingValues, sweepTs, sweeper);
+
+        Multimap<Cell, Long> startTimestampsToSweepPerCell = cellsAndSentinels.startTimestampsToSweepPerCell();
+        sweepCells(tableRef, startTimestampsToSweepPerCell, cellsAndSentinels.sentinelsToAdd());
+
+        return startTimestampsToSweepPerCell.size();
     }
 
     private Sweeper getSweeperFor(SweepStrategy sweepStrategy) {
