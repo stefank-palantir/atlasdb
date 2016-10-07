@@ -17,6 +17,7 @@ package com.palantir.atlasdb.keyvalue.api;
 
 import java.io.Serializable;
 import java.util.Arrays;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
@@ -25,6 +26,7 @@ import java.util.SortedMap;
 import com.google.common.base.Function;
 import com.google.common.base.MoreObjects;
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSortedMap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Maps;
@@ -105,12 +107,17 @@ public final class RowResult<T> implements Serializable {
     }
 
     public Iterable<Map.Entry<Cell, T>> getCells() {
-        return Iterables.transform(columns.entrySet(), new Function<Map.Entry<byte[], T>, Map.Entry<Cell, T>>() {
-            @Override
-            public Entry<Cell, T> apply(Entry<byte[], T> from) {
-                return Maps.immutableEntry(Cell.create(row, from.getKey()), from.getValue());
-            }
-        });
+        return getCellsSet();
+    }
+
+    public Set<Map.Entry<Cell, T>> getCellsSet() {
+        return ImmutableSet.copyOf(getCellsIterator());
+    }
+
+    public Iterator<Entry<Cell, T>> getCellsIterator() {
+        return columns.entrySet().stream()
+                .map(entry -> Maps.immutableEntry(Cell.create(row, entry.getKey()), entry.getValue()))
+                .iterator();
     }
 
     @Override

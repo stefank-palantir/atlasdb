@@ -17,11 +17,13 @@ package com.palantir.atlasdb.sweep;
 
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.annotation.Nullable;
 
@@ -64,6 +66,8 @@ import com.palantir.atlasdb.transaction.api.TransactionManager;
 import com.palantir.atlasdb.transaction.impl.SweepStrategyManager;
 import com.palantir.atlasdb.transaction.impl.TransactionConstants;
 import com.palantir.atlasdb.transaction.service.TransactionService;
+import com.palantir.common.base.BatchingVisitable;
+import com.palantir.common.base.BatchingVisitableFromIterable;
 import com.palantir.common.base.ClosableIterator;
 
 /**
@@ -145,16 +149,29 @@ public class SweepTaskRunnerImpl implements SweepTaskRunner {
                     ImmutableList.copyOf(Iterators.limit(rowResults, batchSize));
             PeekingIterator<RowResult<Value>> peekingValues = Iterators.peekingIterator(valueResults);
 
-            Multimap<Cell, Long> rowTimestamps = getTimestampsFromRowResults(rowResultTimestamps, sweeper);
-            CellsAndSentinels cellsAndSentinels = getStartTimestampsPerRowToSweep(
-                    rowTimestamps, peekingValues, sweepTs, sweeper);
 
-            Multimap<Cell, Long> startTimestampsToSweepPerCell = cellsAndSentinels.startTimestampsToSweepPerCell();
-            sweepCells(tableRef, startTimestampsToSweepPerCell, cellsAndSentinels.sentinelsToAdd());
+            BatchingVisitable<CellAndTimestamps> cellAndTimestampsBatchingVisitable = BatchingVisitableFromIterable.create(
+                    getTimestampsFromRowResultsIterator(rowResultTimestamps, sweeper));
+
+            final AtomicInteger cellsSwept = new AtomicInteger(0);
+            cellAndTimestampsBatchingVisitable.batchAccept(
+                    1,
+                    item -> {
+                        Multimap<Cell, Long> rowTimestamps = convertToMultimap(item);
+                        CellsAndSentinels cellsAndSentinels = getStartTimestampsPerRowToSweep(
+                                rowTimestamps, peekingValues, sweepTs, sweeper);
+
+                        Multimap<Cell, Long> startTimestampsToSweepPerCell = cellsAndSentinels.startTimestampsToSweepPerCell();
+                        sweepCells(tableRef, startTimestampsToSweepPerCell, cellsAndSentinels.sentinelsToAdd());
+
+                        cellsSwept.addAndGet(startTimestampsToSweepPerCell.size());
+
+                        return true;
+                    });
 
             byte[] nextRow = rowResultTimestamps.size() < batchSize ? null :
                 RangeRequests.getNextStartRow(false, Iterables.getLast(rowResultTimestamps).getRowName());
-            return new SweepResults(nextRow, rowResultTimestamps.size(), startTimestampsToSweepPerCell.size(), sweepTs);
+            return new SweepResults(nextRow, rowResultTimestamps.size(), cellsSwept.get(), sweepTs);
         }
     }
 
@@ -181,16 +198,30 @@ public class SweepTaskRunnerImpl implements SweepTaskRunner {
         return getSweeperFor(sweepStrategy).getSweepTimestamp();
     }
 
-    @VisibleForTesting
-    static Multimap<Cell, Long> getTimestampsFromRowResults(List<RowResult<Set<Long>>> cellsToSweep, Sweeper sweeper) {
-        Set<Long> timestampsToIgnore = sweeper.getTimestampsToIgnore();
+    private static Multimap<Cell, Long> convertToMultimap(List<CellAndTimestamps> cellAndTimestampsList) {
         ImmutableMultimap.Builder<Cell, Long> cellTsMappings = ImmutableMultimap.builder();
-        for (RowResult<Set<Long>> rowResult : cellsToSweep) {
-            for (Map.Entry<Cell, Set<Long>> entry : rowResult.getCells()) {
-                cellTsMappings.putAll(entry.getKey(), Sets.difference(entry.getValue(), timestampsToIgnore));
-            }
+        for (CellAndTimestamps cellAndTimestamps : cellAndTimestampsList) {
+            cellTsMappings.putAll(cellAndTimestamps.cell(), cellAndTimestamps.timestamps());
         }
         return cellTsMappings.build();
+    }
+
+    @VisibleForTesting
+    static Multimap<Cell, Long> getTimestampsFromRowResults(List<RowResult<Set<Long>>> cellsToSweep, Sweeper sweeper) {
+
+        List<CellAndTimestamps> cellAndTimestampsList = ImmutableList.copyOf(getTimestampsFromRowResultsIterator(cellsToSweep, sweeper));
+
+        return convertToMultimap(cellAndTimestampsList);
+    }
+
+    static Iterator<CellAndTimestamps> getTimestampsFromRowResultsIterator(List<RowResult<Set<Long>>> cellsToSweep, Sweeper sweeper) {
+        Set<Long> timestampsToIgnore = sweeper.getTimestampsToIgnore();
+        return cellsToSweep.stream()
+                .flatMap(rowResult -> rowResult.getCellsSet().stream()
+                        .map(entry -> CellAndTimestamps.of(
+                                entry.getKey(),
+                                Sets.difference(entry.getValue(), timestampsToIgnore))))
+                .iterator();
     }
 
     @VisibleForTesting
