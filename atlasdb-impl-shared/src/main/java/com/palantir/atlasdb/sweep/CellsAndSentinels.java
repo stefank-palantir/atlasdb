@@ -15,22 +15,22 @@
  */
 package com.palantir.atlasdb.sweep;
 
-import java.util.List;
 import java.util.Set;
 
 import org.immutables.value.Value;
 
+import com.google.common.collect.Multimap;
 import com.palantir.atlasdb.keyvalue.api.Cell;
 
 @Value.Immutable
 public abstract class CellsAndSentinels {
-    public static CellsAndSentinels of(List<CellAndTimestamps> startTimestampsToSweepPerCell, Set<Cell> sentinelsToAdd) {
+    public static CellsAndSentinels of(Multimap<Cell, Long> startTimestampsToSweepPerCell, Set<Cell> sentinelsToAdd) {
         return ImmutableCellsAndSentinels.builder()
-                .startTimestampsToSweepPerCell(CellsAndTimestamps.of(startTimestampsToSweepPerCell))
+                .startTimestampsToSweepPerCell(startTimestampsToSweepPerCell)
                 .sentinelsToAdd(sentinelsToAdd)
                 .build();
     }
 
-    public abstract CellsAndTimestamps startTimestampsToSweepPerCell();
+    public abstract Multimap<Cell, Long> startTimestampsToSweepPerCell();
     public abstract Set<Cell> sentinelsToAdd();
 }
