@@ -24,6 +24,7 @@ import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Stream;
 
 import javax.annotation.Nullable;
 
@@ -229,11 +230,18 @@ public class SweepTaskRunnerImpl implements SweepTaskRunner {
             List<RowResult<Set<Long>>> cellsToSweep, Sweeper sweeper) {
         Set<Long> timestampsToIgnore = sweeper.getTimestampsToIgnore();
         return cellsToSweep.stream()
-                .flatMap(rowResult -> rowResult.getCellsSet().stream()
-                        .map(entry -> CellAndTimestamps.of(
-                                entry.getKey(),
-                                Sets.difference(entry.getValue(), timestampsToIgnore))))
+                .flatMap(rowResult -> rowToCellAndTimestampStream(rowResult, timestampsToIgnore))
                 .iterator();
+    }
+
+    private static Stream<CellAndTimestamps> rowToCellAndTimestampStream(
+            RowResult<Set<Long>> rowResult, Set<Long> timestampsToIgnore) {
+        return rowResult.getCellsSet().stream().map(entry -> removingIgnoredTimestamps(entry, timestampsToIgnore));
+    }
+
+    private static CellAndTimestamps removingIgnoredTimestamps(
+            Map.Entry<Cell, Set<Long>> entry, Set<Long> timestampsToIgnore) {
+        return CellAndTimestamps.of(entry.getKey(), Sets.difference(entry.getValue(), timestampsToIgnore));
     }
 
     @VisibleForTesting
