@@ -171,6 +171,42 @@ public class SweepTaskRunnerImpl implements SweepTaskRunner {
         }
     }
 
+    private Sweeper getSweeperFor(SweepStrategy sweepStrategy) {
+        switch (sweepStrategy) {
+            case NOTHING:
+                return new NothingSweeper();
+            case CONSERVATIVE:
+                return new ConservativeSweeper(
+                        keyValueService,
+                        immutableTimestampSupplier,
+                        unreadableTimestampSupplier);
+            case THOROUGH:
+                return new ThoroughSweeper(
+                        keyValueService,
+                        immutableTimestampSupplier);
+            default:
+                throw new IllegalArgumentException("Unknown sweep strategy: " + sweepStrategy);
+        }
+    }
+
+    private static Iterator<CellAndTimestamps> getTimestampsFromRowResultsIterator(
+            List<RowResult<Set<Long>>> cellsToSweep) {
+        return cellsToSweep.stream()
+                .flatMap(SweepTaskRunnerImpl::rowToCellAndTimestampStream)
+                .iterator();
+    }
+
+    private static Stream<CellAndTimestamps> rowToCellAndTimestampStream(
+            RowResult<Set<Long>> rowResult) {
+        return rowResult.getCellsSet().stream()
+                .map(SweepTaskRunnerImpl::convertToCellAndTimestamps);
+    }
+
+    private static CellAndTimestamps convertToCellAndTimestamps(
+            Map.Entry<Cell, Set<Long>> entry) {
+        return CellAndTimestamps.of(entry.getKey(), entry.getValue());
+    }
+
     private int sweepForCells(
             List<CellAndTimestamps> currentBatch,
             TableReference tableRef,
@@ -198,29 +234,6 @@ public class SweepTaskRunnerImpl implements SweepTaskRunner {
         return currentBatch;
     }
 
-    private Sweeper getSweeperFor(SweepStrategy sweepStrategy) {
-        switch (sweepStrategy) {
-            case NOTHING:
-                return new NothingSweeper();
-            case CONSERVATIVE:
-                return new ConservativeSweeper(
-                        keyValueService,
-                        immutableTimestampSupplier,
-                        unreadableTimestampSupplier);
-            case THOROUGH:
-                return new ThoroughSweeper(
-                        keyValueService,
-                        immutableTimestampSupplier);
-            default:
-                throw new IllegalArgumentException("Unknown sweep strategy: " + sweepStrategy);
-        }
-    }
-
-    @Override
-    public long getSweepTimestamp(SweepStrategy sweepStrategy) {
-        return getSweeperFor(sweepStrategy).getSweepTimestamp();
-    }
-
     private static Multimap<Cell, Long> convertToMultimap(List<CellAndTimestamps> cellAndTimestampsList) {
         ImmutableMultimap.Builder<Cell, Long> cellTsMappings = ImmutableMultimap.builder();
         for (CellAndTimestamps cellAndTimestamps : cellAndTimestampsList) {
@@ -229,22 +242,9 @@ public class SweepTaskRunnerImpl implements SweepTaskRunner {
         return cellTsMappings.build();
     }
 
-    static Iterator<CellAndTimestamps> getTimestampsFromRowResultsIterator(
-            List<RowResult<Set<Long>>> cellsToSweep) {
-        return cellsToSweep.stream()
-                .flatMap(SweepTaskRunnerImpl::rowToCellAndTimestampStream)
-                .iterator();
-    }
-
-    private static Stream<CellAndTimestamps> rowToCellAndTimestampStream(
-            RowResult<Set<Long>> rowResult) {
-        return rowResult.getCellsSet().stream()
-                .map(SweepTaskRunnerImpl::convertToCellAndTimestamps);
-    }
-
-    private static CellAndTimestamps convertToCellAndTimestamps(
-            Map.Entry<Cell, Set<Long>> entry) {
-        return CellAndTimestamps.of(entry.getKey(), entry.getValue());
+    @Override
+    public long getSweepTimestamp(SweepStrategy sweepStrategy) {
+        return getSweeperFor(sweepStrategy).getSweepTimestamp();
     }
 
     @VisibleForTesting
