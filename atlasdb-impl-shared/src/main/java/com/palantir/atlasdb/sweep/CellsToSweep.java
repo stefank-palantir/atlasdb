@@ -23,9 +23,9 @@ import com.google.common.collect.Multimap;
 import com.palantir.atlasdb.keyvalue.api.Cell;
 
 @Value.Immutable
-public abstract class CellsAndSentinels {
-    public static CellsAndSentinels of(Multimap<Cell, Long> startTimestampsToSweepPerCell, Set<Cell> sentinelsToAdd) {
-        return ImmutableCellsAndSentinels.builder()
+public abstract class CellsToSweep {
+    public static CellsToSweep of(Multimap<Cell, Long> startTimestampsToSweepPerCell, Set<Cell> sentinelsToAdd) {
+        return ImmutableCellsToSweep.builder()
                 .startTimestampsToSweepPerCell(startTimestampsToSweepPerCell)
                 .sentinelsToAdd(sentinelsToAdd)
                 .build();
