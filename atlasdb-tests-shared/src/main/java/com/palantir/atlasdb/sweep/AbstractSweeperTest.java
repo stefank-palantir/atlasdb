@@ -538,6 +538,41 @@ public abstract class AbstractSweeperTest {
         Assert.assertEquals(sweepResults.getCellsDeleted(), 1);
     }
 
+    @Test
+    public void ensureSweepDoesNotOom() {
+        // repro works with Xmx128M
+        TableReference bigRows = TableReference.create(Namespace.create("someNamespace"), "someTable");
+        createTable(bigRows, SweepStrategy.CONSERVATIVE);
+
+        String rowStr = makeLongString();
+        int cols = putLots(bigRows, rowStr, 10);
+        putLots(bigRows, rowStr, 20);
+
+        SweepResults sweepResults = completeSweep(bigRows, 30);
+        Assert.assertEquals(sweepResults.getCellsDeleted(), cols);
+    }
+
+    private int putLots(TableReference bigRows, String rowStr, long ts) {
+        int cols = 200_000;
+        for (int i = 0; i < cols; i++) {
+            String column = "col" + i;
+            Cell cell = Cell.create(rowStr.getBytes(), column.getBytes());
+            kvs.put(bigRows, ImmutableMap.of(cell, "val".getBytes()), ts);
+        }
+        txService.putUnlessExists(ts, ts);
+
+        System.out.println("Finished putting to KVS at ts=" + ts);
+        return cols;
+    }
+
+    private String makeLongString() {
+        String result = "";
+        for (int i = 0; i < 80; i++) {
+            result += "asdfghjkl";
+        }
+        return result;
+    }
+
     private void testSweepManyRows(SweepStrategy strategy) {
         createTable(strategy);
         putIntoDefaultColumn("foo", "bar1", 5);
