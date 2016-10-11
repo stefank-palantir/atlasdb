@@ -219,8 +219,8 @@ public class SweepTaskRunnerImpl implements SweepTaskRunner {
         CellsToSweep cellsToSweep = getStartTimestampsPerRowToSweep(
                 currentBatchWithoutIgnoredTimestamps, peekingValues, sweepTs, sweeper);
 
-        Multimap<Cell, Long> startTimestampsToSweepPerCell = cellsToSweep.startTimestampsToSweepPerCell();
-        sweepCells(tableRef, startTimestampsToSweepPerCell, cellsToSweep.sentinelsToAdd());
+        Multimap<Cell, Long> startTimestampsToSweepPerCell = cellsToSweep.timestampsAsMultimap();
+        sweepCells(tableRef, startTimestampsToSweepPerCell, cellsToSweep.allSentinels());
 
         return startTimestampsToSweepPerCell.size();
     }
@@ -247,8 +247,6 @@ public class SweepTaskRunnerImpl implements SweepTaskRunner {
             PeekingIterator<RowResult<Value>> values,
             long sweepTimestamp,
             Sweeper sweeper) {
-        ImmutableMultimap.Builder<Cell, Long> startTimestampsToSweepPerCell = ImmutableMultimap.builder();
-        ImmutableSet.Builder<Cell> sentinelsToAdd = ImmutableSet.builder();
 
         LoadingCache<Long, Long> startTsToCommitTs = CacheBuilder.newBuilder()
                 .build(new StartTsToCommitTsCacheLoader(transactionService));
@@ -259,6 +257,7 @@ public class SweepTaskRunnerImpl implements SweepTaskRunner {
             startTsToCommitTs.putAll(transactionService.get(allStartTimestamps));
         }
 
+        ImmutableCellsToSweep.Builder builder = ImmutableCellsToSweep.builder();
         for (CellAndTimestamps cellAndTimestamps : startTimestampsPerCell.cellAndTimestampsList()) {
             Cell cell = cellAndTimestamps.cell();
             Collection<Long> timestamps = cellAndTimestamps.timestamps();
@@ -270,12 +269,9 @@ public class SweepTaskRunnerImpl implements SweepTaskRunner {
                     sweepTimestamp,
                     sweepLastCommitted,
                     sweeper);
-            startTimestampsToSweepPerCell.putAll(cell, cellToSweep.timestamps());
-            if (cellToSweep.needsSentinel()) {
-                sentinelsToAdd.add(cellToSweep.cell());
-            }
+            builder.addCellToSweepList(cellToSweep);
         }
-        return CellsToSweep.of(startTimestampsToSweepPerCell.build(), sentinelsToAdd.build());
+        return builder.build();
     }
 
     private boolean isLatestValueEmpty(Cell cell, PeekingIterator<RowResult<Value>> values) {

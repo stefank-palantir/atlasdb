@@ -15,6 +15,7 @@
  */
 package com.palantir.atlasdb.sweep;
 
+import java.util.Optional;
 import java.util.Set;
 
 import org.immutables.value.Value;
@@ -34,4 +35,12 @@ public abstract class CellToSweep {
     public abstract Cell cell();
     public abstract Set<Long> timestamps();
     public abstract boolean needsSentinel();
+
+    public Optional<Cell> sentinel() {
+        if (needsSentinel()) {
+            return Optional.of(cell());
+        } else {
+            return Optional.empty();
+        }
+    }
 }

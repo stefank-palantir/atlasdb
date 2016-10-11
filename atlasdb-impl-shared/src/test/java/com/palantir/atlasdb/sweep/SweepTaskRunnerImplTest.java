@@ -215,7 +215,7 @@ public class SweepTaskRunnerImplTest {
                 convertToCellAndTimestamps(timestampsPerRow),
                 Iterators.peekingIterator(Collections.emptyIterator()),
                 sweepTimestampHigherThanCommitTimestamp,
-                conservativeSweeper).startTimestampsToSweepPerCell();
+                conservativeSweeper).timestampsAsMultimap();
 
         assertThat(startTimestampsPerRowToSweep.get(SINGLE_CELL)).contains(LOW_START_TS);
     }
@@ -229,7 +229,7 @@ public class SweepTaskRunnerImplTest {
                 convertToCellAndTimestamps(timestampsPerRow),
                 Iterators.peekingIterator(Collections.emptyIterator()),
                 sweepTimestampLowerThanCommitTimestamp,
-                conservativeSweeper).startTimestampsToSweepPerCell();
+                conservativeSweeper).timestampsAsMultimap();
 
         assertThat(startTimestampsPerRowToSweep.get(SINGLE_CELL)).isEmpty();
     }
@@ -245,7 +245,7 @@ public class SweepTaskRunnerImplTest {
                 sweepTimestampHigherThanCommitTimestamp,
                 conservativeSweeper);
 
-        assertThat(cellsToSweep.sentinelsToAdd()).contains(SINGLE_CELL);
+        assertThat(cellsToSweep.allSentinels()).contains(SINGLE_CELL);
     }
 
     @Test
@@ -259,7 +259,7 @@ public class SweepTaskRunnerImplTest {
                 sweepTimestampHigherThanCommitTimestamp,
                 thoroughSweeper);
 
-        assertThat(cellsToSweep.sentinelsToAdd()).isEmpty();
+        assertThat(cellsToSweep.allSentinels()).isEmpty();
     }
 
     @Test
@@ -273,7 +273,7 @@ public class SweepTaskRunnerImplTest {
                 Iterators.peekingIterator(ClosableIterators.emptyImmutableClosableIterator()),
                 HIGH_START_TS,
                 conservativeSweeper);
-        Multimap<Cell, Long> timestampsToSweep = cellsToSweep.startTimestampsToSweepPerCell();
+        Multimap<Cell, Long> timestampsToSweep = cellsToSweep.timestampsAsMultimap();
 
         assertThat(timestampsToSweep.get(SINGLE_CELL)).contains(LOW_START_TS);
     }
@@ -290,7 +290,7 @@ public class SweepTaskRunnerImplTest {
                 Iterators.peekingIterator(ClosableIterators.wrap(ImmutableList.of(rowResult).iterator())),
                 HIGH_START_TS,
                 thoroughSweeper);
-        Multimap<Cell, Long> timestampsToSweep = cellsToSweep.startTimestampsToSweepPerCell();
+        Multimap<Cell, Long> timestampsToSweep = cellsToSweep.timestampsAsMultimap();
 
         assertThat(timestampsToSweep.get(SINGLE_CELL)).contains(LOW_START_TS);
     }

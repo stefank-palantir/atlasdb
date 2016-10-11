@@ -15,22 +15,35 @@
  */
 package com.palantir.atlasdb.sweep;
 
+import java.util.List;
 import java.util.Set;
 
 import org.immutables.value.Value;
 
+import com.google.common.collect.ImmutableMultimap;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Multimap;
 import com.palantir.atlasdb.keyvalue.api.Cell;
 
 @Value.Immutable
 public abstract class CellsToSweep {
-    public static CellsToSweep of(Multimap<Cell, Long> startTimestampsToSweepPerCell, Set<Cell> sentinelsToAdd) {
-        return ImmutableCellsToSweep.builder()
-                .startTimestampsToSweepPerCell(startTimestampsToSweepPerCell)
-                .sentinelsToAdd(sentinelsToAdd)
-                .build();
+    public abstract List<CellToSweep> cellToSweepList();
+
+    public Multimap<Cell, Long> timestampsAsMultimap() {
+        ImmutableMultimap.Builder<Cell, Long> builder = ImmutableMultimap.builder();
+        for (CellToSweep cellToSweep : cellToSweepList()) {
+            builder.putAll(cellToSweep.cell(), cellToSweep.timestamps());
+        }
+        return builder.build();
     }
 
-    public abstract Multimap<Cell, Long> startTimestampsToSweepPerCell();
-    public abstract Set<Cell> sentinelsToAdd();
+    public Set<Cell> allSentinels() {
+        ImmutableSet.Builder<Cell> builder = ImmutableSet.builder();
+        for (CellToSweep cellToSweep : cellToSweepList()) {
+            if (cellToSweep.sentinel().isPresent()) {
+                builder.add(cellToSweep.sentinel().get());
+            }
+        }
+        return builder.build();
+    }
 }
