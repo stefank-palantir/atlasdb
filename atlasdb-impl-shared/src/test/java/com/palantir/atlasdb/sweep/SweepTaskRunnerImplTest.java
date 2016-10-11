@@ -138,10 +138,10 @@ public class SweepTaskRunnerImplTest {
         ImmutableList<CellAndTimestamps> cellsToSweep = ImmutableList.of(
                 CellAndTimestamps.of(SINGLE_CELL, ImmutableSet.of(VALID_TIMESTAMP)));
 
-        List<CellAndTimestamps> cellsAndTimestampsToSweep = SweepTaskRunnerImpl.removeIgnoredTimestamps(
+        CellsAndTimestamps cellsAndTimestampsToSweep = SweepTaskRunnerImpl.removeIgnoredTimestamps(
                 cellsToSweep, ImmutableSet.of());
 
-        assertThat(cellsAndTimestampsToSweep).isEqualTo(cellsToSweep);
+        assertThat(cellsAndTimestampsToSweep.cellAndTimestampsList()).isEqualTo(cellsToSweep);
     }
 
     @Test
@@ -149,10 +149,10 @@ public class SweepTaskRunnerImplTest {
         ImmutableList<CellAndTimestamps> cellsToSweep = ImmutableList.of(
                 CellAndTimestamps.of(SINGLE_CELL, ImmutableSet.of(Value.INVALID_VALUE_TIMESTAMP)));
 
-        List<CellAndTimestamps> cellsAndTimestampsToSweep = SweepTaskRunnerImpl.removeIgnoredTimestamps(
+        CellsAndTimestamps cellsAndTimestampsToSweep = SweepTaskRunnerImpl.removeIgnoredTimestamps(
                 cellsToSweep, ImmutableSet.of(Value.INVALID_VALUE_TIMESTAMP));
 
-        assertThat(cellsAndTimestampsToSweep).contains(CellAndTimestamps.of(SINGLE_CELL, ImmutableSet.of()));
+        assertThat(cellsAndTimestampsToSweep.cellAndTimestampsList()).contains(CellAndTimestamps.of(SINGLE_CELL, ImmutableSet.of()));
     }
 
     @Test
@@ -187,10 +187,10 @@ public class SweepTaskRunnerImplTest {
         return cellTsMappings.build();
     }
 
-    private static List<CellAndTimestamps> convertToCellAndTimestamps(Multimap<Cell, Long> multimap) {
-        ImmutableList.Builder<CellAndTimestamps> builder = ImmutableList.builder();
+    private static CellsAndTimestamps convertToCellAndTimestamps(Multimap<Cell, Long> multimap) {
+        ImmutableCellsAndTimestamps.Builder builder = ImmutableCellsAndTimestamps.builder();
         for (Cell cell : multimap.keySet()) {
-            builder.add(CellAndTimestamps.of(cell, ImmutableSet.copyOf(multimap.get(cell))));
+            builder.addCellAndTimestampsList(CellAndTimestamps.of(cell, ImmutableSet.copyOf(multimap.get(cell))));
         }
         return builder.build();
     }

@@ -213,7 +213,7 @@ public class SweepTaskRunnerImpl implements SweepTaskRunner {
             Sweeper sweeper,
             long sweepTs,
             PeekingIterator<RowResult<Value>> peekingValues) {
-        List<CellAndTimestamps> currentBatchWithoutIgnoredTimestamps =
+        CellsAndTimestamps currentBatchWithoutIgnoredTimestamps =
                 removeIgnoredTimestamps(currentBatch, sweeper.getTimestampsToIgnore());
 
         CellsAndSentinels cellsAndSentinels = getStartTimestampsPerRowToSweep(
@@ -226,11 +226,14 @@ public class SweepTaskRunnerImpl implements SweepTaskRunner {
     }
 
     @VisibleForTesting
-    static List<CellAndTimestamps> removeIgnoredTimestamps(List<CellAndTimestamps> currentBatch,
+    static CellsAndTimestamps removeIgnoredTimestamps(List<CellAndTimestamps> currentBatch,
             Set<Long> timestampsToIgnore) {
-        return currentBatch.stream()
+        List<CellAndTimestamps> cellsAndTimestamps = currentBatch.stream()
                 .map(item -> CellAndTimestamps.of(item.cell(), Sets.difference(item.timestamps(), timestampsToIgnore)))
                 .collect(Collectors.toList());
+        return ImmutableCellsAndTimestamps.builder()
+                .cellAndTimestampsList(cellsAndTimestamps)
+                .build();
     }
 
     @Override
@@ -240,7 +243,7 @@ public class SweepTaskRunnerImpl implements SweepTaskRunner {
 
     @VisibleForTesting
     CellsAndSentinels getStartTimestampsPerRowToSweep(
-            List<CellAndTimestamps> startTimestampsPerCell,
+            CellsAndTimestamps startTimestampsPerCell,
             PeekingIterator<RowResult<Value>> values,
             long sweepTimestamp,
             Sweeper sweeper) {
@@ -251,11 +254,12 @@ public class SweepTaskRunnerImpl implements SweepTaskRunner {
                 .build(new StartTsToCommitTsCacheLoader(transactionService));
 
         // Needed because calling transactionService.get(<EMPTY>) is weird (it logs that it is empty too).
-        if (!startTimestampsPerCell.isEmpty()) {
-            startTsToCommitTs.putAll(transactionService.get(getAllTimestampValues(startTimestampsPerCell)));
+        Set<Long> allStartTimestamps = startTimestampsPerCell.getAllTimestampValues();
+        if (!allStartTimestamps.isEmpty()) {
+            startTsToCommitTs.putAll(transactionService.get(allStartTimestamps));
         }
 
-        for (CellAndTimestamps cellAndTimestamps : startTimestampsPerCell) {
+        for (CellAndTimestamps cellAndTimestamps : startTimestampsPerCell.cellAndTimestampsList()) {
             Cell cell = cellAndTimestamps.cell();
             Collection<Long> timestamps = cellAndTimestamps.timestamps();
             boolean sweepLastCommitted = isLatestValueEmpty(cell, values);
@@ -270,12 +274,6 @@ public class SweepTaskRunnerImpl implements SweepTaskRunner {
             sentinelsToAdd.addAll(timestampsAndSentinels.sentinelsToAdd());
         }
         return CellsAndSentinels.of(startTimestampsToSweepPerCell.build(), sentinelsToAdd.build());
-    }
-
-    private Set<Long> getAllTimestampValues(List<CellAndTimestamps> cellAndTimestampsList) {
-        return cellAndTimestampsList.stream()
-                .flatMap(cellAndTimestamps -> cellAndTimestamps.timestamps().stream())
-                .collect(Collectors.toSet());
     }
 
     private boolean isLatestValueEmpty(Cell cell, PeekingIterator<RowResult<Value>> values) {
