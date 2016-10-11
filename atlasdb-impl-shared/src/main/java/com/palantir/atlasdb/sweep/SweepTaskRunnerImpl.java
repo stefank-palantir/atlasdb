@@ -189,7 +189,8 @@ public class SweepTaskRunnerImpl implements SweepTaskRunner {
         return startTimestampsToSweepPerCell.size();
     }
 
-    private List<CellAndTimestamps> removeIgnoredTimestamps(List<CellAndTimestamps> currentBatch,
+    @VisibleForTesting
+    static List<CellAndTimestamps> removeIgnoredTimestamps(List<CellAndTimestamps> currentBatch,
             Set<Long> timestampsToIgnore) {
         currentBatch = currentBatch.stream()
                 .map(item -> CellAndTimestamps.of(item.cell(), Sets.difference(item.timestamps(), timestampsToIgnore)))
@@ -226,16 +227,6 @@ public class SweepTaskRunnerImpl implements SweepTaskRunner {
             cellTsMappings.putAll(cellAndTimestamps.cell(), cellAndTimestamps.timestamps());
         }
         return cellTsMappings.build();
-    }
-
-    // TODO delete this because it's unused
-    @VisibleForTesting
-    static Multimap<Cell, Long> getTimestampsFromRowResults(List<RowResult<Set<Long>>> cellsToSweep, Sweeper sweeper) {
-
-        List<CellAndTimestamps> cellAndTimestampsList = ImmutableList.copyOf(
-                getTimestampsFromRowResultsIterator(cellsToSweep));
-
-        return convertToMultimap(cellAndTimestampsList);
     }
 
     static Iterator<CellAndTimestamps> getTimestampsFromRowResultsIterator(

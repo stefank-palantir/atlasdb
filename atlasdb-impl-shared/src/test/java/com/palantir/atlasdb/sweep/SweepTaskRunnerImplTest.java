@@ -132,67 +132,25 @@ public class SweepTaskRunnerImplTest {
     }
 
     @Test
-    public void getTimestampsFromEmptyRowResultsReturnsEmptyInThoroughSweep() {
-        Multimap<Cell, Long> actualTimestamps =
-                SweepTaskRunnerImpl.getTimestampsFromRowResults(ImmutableList.of(), thoroughSweeper);
+    public void sweepValidTimestamps() {
+        ImmutableList<CellAndTimestamps> cellsToSweep = ImmutableList.of(
+                CellAndTimestamps.of(SINGLE_CELL, ImmutableSet.of(VALID_TIMESTAMP)));
 
-        assertThat(actualTimestamps).isEqualTo(ImmutableMultimap.of());
+        List<CellAndTimestamps> cellsAndTimestampsToSweep = SweepTaskRunnerImpl.removeIgnoredTimestamps(
+                cellsToSweep, ImmutableSet.of());
+
+        assertThat(cellsAndTimestampsToSweep).isEqualTo(cellsToSweep);
     }
 
     @Test
-    public void getTimestampsFromEmptyRowResultsReturnsEmptyInConservativeSweep() {
-        Multimap<Cell, Long> actualTimestamps =
-                SweepTaskRunnerImpl.getTimestampsFromRowResults(ImmutableList.of(), conservativeSweeper);
+    public void doNotSweepIgnoredTimestamps() {
+        ImmutableList<CellAndTimestamps> cellsToSweep = ImmutableList.of(
+                CellAndTimestamps.of(SINGLE_CELL, ImmutableSet.of(Value.INVALID_VALUE_TIMESTAMP)));
 
-        assertThat(actualTimestamps).isEqualTo(ImmutableMultimap.of());
-    }
+        List<CellAndTimestamps> cellsAndTimestampsToSweep = SweepTaskRunnerImpl.removeIgnoredTimestamps(
+                cellsToSweep, ImmutableSet.of(Value.INVALID_VALUE_TIMESTAMP));
 
-    @Test
-    public void invalidTimestampsAreFilteredOutWhenGettingTimestampsFromRowResultsInConservativeSweep() {
-        List<RowResult<Set<Long>>> cellsToSweep = ImmutableList.of(
-                RowResult.of(SINGLE_CELL, ImmutableSet.of(Value.INVALID_VALUE_TIMESTAMP)));
-
-        Multimap<Cell, Long> actualTimestamps =
-                SweepTaskRunnerImpl.getTimestampsFromRowResults(cellsToSweep, conservativeSweeper);
-
-        assertThat(actualTimestamps).isEqualTo(ImmutableMultimap.of());
-    }
-
-    @Test
-    public void invalidTimetampsAreKeptWhenGettingTimestampsFromRowResultsInThoroughSweep() {
-        List<RowResult<Set<Long>>> cellsToSweep = ImmutableList.of(
-                RowResult.of(SINGLE_CELL, ImmutableSet.of(Value.INVALID_VALUE_TIMESTAMP)));
-        Multimap<Cell, Long> expectedTimestamps = ImmutableMultimap.of(
-                SINGLE_CELL, Value.INVALID_VALUE_TIMESTAMP);
-
-        Multimap<Cell, Long> actualTimestamps =
-                SweepTaskRunnerImpl.getTimestampsFromRowResults(cellsToSweep, thoroughSweeper);
-
-        assertThat(actualTimestamps).isEqualTo(expectedTimestamps);
-    }
-
-    @Test
-    public void validTimestampsAreKeptWhenGettingTimestampsFromRowResultsInThoroughSweep() {
-        List<RowResult<Set<Long>>> cellsToSweep = ImmutableList.of(
-                RowResult.of(SINGLE_CELL, ImmutableSet.of(VALID_TIMESTAMP)));
-        Multimap<Cell, Long> expectedTimestamps = ImmutableMultimap.of(SINGLE_CELL, VALID_TIMESTAMP);
-
-        Multimap<Cell, Long> actualTimestamps =
-                SweepTaskRunnerImpl.getTimestampsFromRowResults(cellsToSweep, thoroughSweeper);
-
-        assertThat(actualTimestamps).isEqualTo(expectedTimestamps);
-    }
-
-    @Test
-    public void validTimestampsAreKeptWhenGettingTimestampsFromRowResultsInConservativeSweep() {
-        List<RowResult<Set<Long>>> cellsToSweep = ImmutableList.of(
-                RowResult.of(SINGLE_CELL, ImmutableSet.of(VALID_TIMESTAMP)));
-        Multimap<Cell, Long> expectedTimestamps = ImmutableMultimap.of(SINGLE_CELL, VALID_TIMESTAMP);
-
-        Multimap<Cell, Long> actualTimestamps =
-                SweepTaskRunnerImpl.getTimestampsFromRowResults(cellsToSweep, conservativeSweeper);
-
-        assertThat(actualTimestamps).isEqualTo(expectedTimestamps);
+        assertThat(cellsAndTimestampsToSweep).contains(CellAndTimestamps.of(SINGLE_CELL, ImmutableSet.of()));
     }
 
     @Test
