@@ -24,6 +24,7 @@ import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import javax.annotation.Nullable;
@@ -152,15 +153,14 @@ public class SweepTaskRunnerImpl implements SweepTaskRunner {
             PeekingIterator<RowResult<Value>> peekingValues = Iterators.peekingIterator(valueResults);
 
 
-            BatchingVisitable<CellAndTimestamps> cellAndTimestampsBatchingVisitable = BatchingVisitableFromIterable
-                    .create(getTimestampsFromRowResultsIterator(rowResultTimestamps, sweeper));
+            BatchingVisitable<CellAndTimestamps> cellsAndTimestamps = BatchingVisitableFromIterable
+                    .create(getTimestampsFromRowResultsIterator(rowResultTimestamps));
 
             final AtomicInteger totalCellsSwept = new AtomicInteger(0);
-            cellAndTimestampsBatchingVisitable.batchAccept(
+            cellsAndTimestamps.batchAccept(
                     CELL_BATCH_SIZE,
-                    cellAndTimestampsList -> {
-                        Multimap<Cell, Long> rowTimestamps = convertToMultimap(cellAndTimestampsList);
-                        int cellsSwept = sweepForCells(rowTimestamps, tableRef, sweeper, sweepTs, peekingValues);
+                    currentBatch -> {
+                        int cellsSwept = sweepForCells(currentBatch, tableRef, sweeper, sweepTs, peekingValues);
                         totalCellsSwept.addAndGet(cellsSwept);
                         return true;
                     });
@@ -172,18 +172,29 @@ public class SweepTaskRunnerImpl implements SweepTaskRunner {
     }
 
     private int sweepForCells(
-            Multimap<Cell, Long> rowTimestamps,
+            List<CellAndTimestamps> currentBatch,
             TableReference tableRef,
             Sweeper sweeper,
             long sweepTs,
             PeekingIterator<RowResult<Value>> peekingValues) {
+        currentBatch = removeIgnoredTimestamps(currentBatch, sweeper.getTimestampsToIgnore());
+        Multimap<Cell, Long> startTimestamps = convertToMultimap(currentBatch);
+
         CellsAndSentinels cellsAndSentinels = getStartTimestampsPerRowToSweep(
-                rowTimestamps, peekingValues, sweepTs, sweeper);
+                startTimestamps, peekingValues, sweepTs, sweeper);
 
         Multimap<Cell, Long> startTimestampsToSweepPerCell = cellsAndSentinels.startTimestampsToSweepPerCell();
         sweepCells(tableRef, startTimestampsToSweepPerCell, cellsAndSentinels.sentinelsToAdd());
 
         return startTimestampsToSweepPerCell.size();
+    }
+
+    private List<CellAndTimestamps> removeIgnoredTimestamps(List<CellAndTimestamps> currentBatch,
+            Set<Long> timestampsToIgnore) {
+        currentBatch = currentBatch.stream()
+                .map(item -> CellAndTimestamps.of(item.cell(), Sets.difference(item.timestamps(), timestampsToIgnore)))
+                .collect(Collectors.toList());
+        return currentBatch;
     }
 
     private Sweeper getSweeperFor(SweepStrategy sweepStrategy) {
@@ -217,31 +228,32 @@ public class SweepTaskRunnerImpl implements SweepTaskRunner {
         return cellTsMappings.build();
     }
 
+    // TODO delete this because it's unused
     @VisibleForTesting
     static Multimap<Cell, Long> getTimestampsFromRowResults(List<RowResult<Set<Long>>> cellsToSweep, Sweeper sweeper) {
 
         List<CellAndTimestamps> cellAndTimestampsList = ImmutableList.copyOf(
-                getTimestampsFromRowResultsIterator(cellsToSweep, sweeper));
+                getTimestampsFromRowResultsIterator(cellsToSweep));
 
         return convertToMultimap(cellAndTimestampsList);
     }
 
     static Iterator<CellAndTimestamps> getTimestampsFromRowResultsIterator(
-            List<RowResult<Set<Long>>> cellsToSweep, Sweeper sweeper) {
-        Set<Long> timestampsToIgnore = sweeper.getTimestampsToIgnore();
+            List<RowResult<Set<Long>>> cellsToSweep) {
         return cellsToSweep.stream()
-                .flatMap(rowResult -> rowToCellAndTimestampStream(rowResult, timestampsToIgnore))
+                .flatMap(SweepTaskRunnerImpl::rowToCellAndTimestampStream)
                 .iterator();
     }
 
     private static Stream<CellAndTimestamps> rowToCellAndTimestampStream(
-            RowResult<Set<Long>> rowResult, Set<Long> timestampsToIgnore) {
-        return rowResult.getCellsSet().stream().map(entry -> removingIgnoredTimestamps(entry, timestampsToIgnore));
+            RowResult<Set<Long>> rowResult) {
+        return rowResult.getCellsSet().stream()
+                .map(SweepTaskRunnerImpl::convertToCellAndTimestamps);
     }
 
-    private static CellAndTimestamps removingIgnoredTimestamps(
-            Map.Entry<Cell, Set<Long>> entry, Set<Long> timestampsToIgnore) {
-        return CellAndTimestamps.of(entry.getKey(), Sets.difference(entry.getValue(), timestampsToIgnore));
+    private static CellAndTimestamps convertToCellAndTimestamps(
+            Map.Entry<Cell, Set<Long>> entry) {
+        return CellAndTimestamps.of(entry.getKey(), entry.getValue());
     }
 
     @VisibleForTesting
