@@ -177,15 +177,6 @@ public class SweepTaskRunnerImplTest {
         assertThat(sweepTaskRunner.getSweepTimestamp(SweepStrategy.CONSERVATIVE)).isEqualTo(100L);
     }
 
-    // TODO replace this later
-    private static Multimap<Cell, Long> convertToMultimap(List<CellAndTimestamps> cellAndTimestampsList) {
-        ImmutableMultimap.Builder<Cell, Long> cellTsMappings = ImmutableMultimap.builder();
-        for (CellAndTimestamps cellAndTimestamps : cellAndTimestampsList) {
-            cellTsMappings.putAll(cellAndTimestamps.cell(), cellAndTimestamps.timestamps());
-        }
-        return cellTsMappings.build();
-    }
-
     private static CellsAndTimestamps convertToCellAndTimestamps(Multimap<Cell, Long> multimap) {
         ImmutableCellsAndTimestamps.Builder builder = ImmutableCellsAndTimestamps.builder();
         for (Cell cell : multimap.keySet()) {

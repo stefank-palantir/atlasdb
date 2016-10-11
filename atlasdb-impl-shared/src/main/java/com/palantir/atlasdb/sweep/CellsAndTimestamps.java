@@ -25,10 +25,6 @@ import org.immutables.value.Value;
 public abstract class CellsAndTimestamps {
     public abstract List<CellAndTimestamps> cellAndTimestampsList();
 
-    public boolean isEmpty() {
-        return cellAndTimestampsList().isEmpty();
-    }
-
     public Set<Long> getAllTimestampValues() {
         return cellAndTimestampsList().stream()
                 .flatMap(cellAndTimestamps -> cellAndTimestamps.timestamps().stream())
