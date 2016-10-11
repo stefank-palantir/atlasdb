@@ -18,6 +18,7 @@ package com.palantir.atlasdb.sweep;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyCollection;
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
@@ -28,6 +29,7 @@ import static org.mockito.Mockito.when;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import org.junit.Test;
@@ -176,10 +178,27 @@ public class SweepTaskRunnerImplTest {
         assertThat(sweepTaskRunner.getSweepTimestamp(SweepStrategy.CONSERVATIVE)).isEqualTo(100L);
     }
 
+    // TODO replace this later
+    private static Multimap<Cell, Long> convertToMultimap(List<CellAndTimestamps> cellAndTimestampsList) {
+        ImmutableMultimap.Builder<Cell, Long> cellTsMappings = ImmutableMultimap.builder();
+        for (CellAndTimestamps cellAndTimestamps : cellAndTimestampsList) {
+            cellTsMappings.putAll(cellAndTimestamps.cell(), cellAndTimestamps.timestamps());
+        }
+        return cellTsMappings.build();
+    }
+
+    private static List<CellAndTimestamps> convertToCellAndTimestamps(Multimap<Cell, Long> multimap) {
+        ImmutableList.Builder<CellAndTimestamps> builder = ImmutableList.builder();
+        for (Cell cell : multimap.keySet()) {
+            builder.add(CellAndTimestamps.of(cell, ImmutableSet.copyOf(multimap.get(cell))));
+        }
+        return builder.build();
+    }
+
     @Test
     public void getTimestampsToSweep_noRowsMeansNoTransactionGets() {
         sweepTaskRunner.getStartTimestampsPerRowToSweep(
-                ImmutableMultimap.of(),
+                convertToCellAndTimestamps(ImmutableMultimap.of()),
                 Iterators.peekingIterator(Collections.emptyIterator()),
                 VALID_TIMESTAMP,
                 conservativeSweeper);
@@ -194,7 +213,7 @@ public class SweepTaskRunnerImplTest {
         Multimap<Cell, Long> timestampsPerRow = twoCommittedTimestampsForSingleCell();
 
         Multimap<Cell, Long> startTimestampsPerRowToSweep = sweepTaskRunner.getStartTimestampsPerRowToSweep(
-                timestampsPerRow,
+                convertToCellAndTimestamps(timestampsPerRow),
                 Iterators.peekingIterator(Collections.emptyIterator()),
                 sweepTimestampHigherThanCommitTimestamp,
                 conservativeSweeper).startTimestampsToSweepPerCell();
@@ -208,7 +227,7 @@ public class SweepTaskRunnerImplTest {
         Multimap<Cell, Long> timestampsPerRow = twoCommittedTimestampsForSingleCell();
 
         Multimap<Cell, Long> startTimestampsPerRowToSweep = sweepTaskRunner.getStartTimestampsPerRowToSweep(
-                timestampsPerRow,
+                convertToCellAndTimestamps(timestampsPerRow),
                 Iterators.peekingIterator(Collections.emptyIterator()),
                 sweepTimestampLowerThanCommitTimestamp,
                 conservativeSweeper).startTimestampsToSweepPerCell();
@@ -221,7 +240,8 @@ public class SweepTaskRunnerImplTest {
         long sweepTimestampHigherThanCommitTimestamp = HIGH_COMMIT_TS + 1;
         Multimap<Cell, Long> timestampsPerRow = twoCommittedTimestampsForSingleCell();
 
-        CellsAndSentinels cellsAndSentinels = sweepTaskRunner.getStartTimestampsPerRowToSweep(timestampsPerRow,
+        CellsAndSentinels cellsAndSentinels = sweepTaskRunner.getStartTimestampsPerRowToSweep(
+                convertToCellAndTimestamps(timestampsPerRow),
                 Iterators.peekingIterator(ClosableIterators.emptyImmutableClosableIterator()),
                 sweepTimestampHigherThanCommitTimestamp,
                 conservativeSweeper);
@@ -234,7 +254,8 @@ public class SweepTaskRunnerImplTest {
         long sweepTimestampHigherThanCommitTimestamp = HIGH_COMMIT_TS + 1;
         Multimap<Cell, Long> timestampsPerRow = twoCommittedTimestampsForSingleCell();
 
-        CellsAndSentinels cellsAndSentinels = sweepTaskRunner.getStartTimestampsPerRowToSweep(timestampsPerRow,
+        CellsAndSentinels cellsAndSentinels = sweepTaskRunner.getStartTimestampsPerRowToSweep(
+                convertToCellAndTimestamps(timestampsPerRow),
                 Iterators.peekingIterator(ClosableIterators.emptyImmutableClosableIterator()),
                 sweepTimestampHigherThanCommitTimestamp,
                 thoroughSweeper);
@@ -245,10 +266,11 @@ public class SweepTaskRunnerImplTest {
     @Test
     public void getTimestampsToSweep_onlyTransactionUncommitted_returnsIt() {
         Multimap<Cell, Long> timestampsPerRow = ImmutableMultimap.of(SINGLE_CELL, LOW_START_TS);
-        when(mockTransactionService.get(timestampsPerRow.values()))
+        when(mockTransactionService.get(anyCollection()))
                 .thenReturn(ImmutableMap.of(LOW_START_TS, TransactionConstants.FAILED_COMMIT_TS));
 
-        CellsAndSentinels cellsAndSentinels = sweepTaskRunner.getStartTimestampsPerRowToSweep(timestampsPerRow,
+        CellsAndSentinels cellsAndSentinels = sweepTaskRunner.getStartTimestampsPerRowToSweep(
+                convertToCellAndTimestamps(timestampsPerRow),
                 Iterators.peekingIterator(ClosableIterators.emptyImmutableClosableIterator()),
                 HIGH_START_TS,
                 conservativeSweeper);
@@ -260,11 +282,12 @@ public class SweepTaskRunnerImplTest {
     @Test
     public void thorough_getTimestampsToSweep_oneTransaction_emptyValue_returnsIt() {
         Multimap<Cell, Long> timestampsPerRow = ImmutableMultimap.of(SINGLE_CELL, LOW_START_TS);
-        when(mockTransactionService.get(timestampsPerRow.values()))
+        when(mockTransactionService.get(anyCollection()))
                 .thenReturn(ImmutableMap.of(LOW_START_TS, LOW_COMMIT_TS));
         RowResult<Value> rowResult = RowResult.of(SINGLE_CELL, Value.create(null, LOW_START_TS));
 
-        CellsAndSentinels cellsAndSentinels = sweepTaskRunner.getStartTimestampsPerRowToSweep(timestampsPerRow,
+        CellsAndSentinels cellsAndSentinels = sweepTaskRunner.getStartTimestampsPerRowToSweep(
+                convertToCellAndTimestamps(timestampsPerRow),
                 Iterators.peekingIterator(ClosableIterators.wrap(ImmutableList.of(rowResult).iterator())),
                 HIGH_START_TS,
                 thoroughSweeper);
@@ -278,7 +301,7 @@ public class SweepTaskRunnerImplTest {
                 SINGLE_CELL, LOW_START_TS,
                 SINGLE_CELL, HIGH_START_TS);
 
-        when(mockTransactionService.get(timestampsPerRow.values()))
+        when(mockTransactionService.get(anyCollection()))
                 .thenReturn(ImmutableMap.of(
                         LOW_START_TS, LOW_COMMIT_TS,
                         HIGH_START_TS, HIGH_COMMIT_TS));
