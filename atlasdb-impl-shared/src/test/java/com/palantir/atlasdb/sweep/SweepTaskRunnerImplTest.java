@@ -28,7 +28,6 @@ import static org.mockito.Mockito.when;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
-import java.util.List;
 import java.util.Set;
 
 import org.junit.Test;
@@ -151,7 +150,8 @@ public class SweepTaskRunnerImplTest {
         CellsAndTimestamps cellsAndTimestampsToSweep = SweepTaskRunnerImpl.removeIgnoredTimestamps(
                 cellsToSweep, ImmutableSet.of(Value.INVALID_VALUE_TIMESTAMP));
 
-        assertThat(cellsAndTimestampsToSweep.cellAndTimestampsList()).contains(CellAndTimestamps.of(SINGLE_CELL, ImmutableSet.of()));
+        assertThat(cellsAndTimestampsToSweep.cellAndTimestampsList())
+                .contains(CellAndTimestamps.of(SINGLE_CELL, ImmutableSet.of()));
     }
 
     @Test
