@@ -22,6 +22,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import com.google.common.base.Supplier;
@@ -538,6 +539,7 @@ public abstract class AbstractSweeperTest {
         Assert.assertEquals(sweepResults.getCellsDeleted(), 1);
     }
 
+    @Ignore
     @Test
     public void ensureSweepDoesNotOom() {
         // repro works with Xmx32M
