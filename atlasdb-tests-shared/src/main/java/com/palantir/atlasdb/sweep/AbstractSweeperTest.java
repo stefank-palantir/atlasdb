@@ -540,7 +540,7 @@ public abstract class AbstractSweeperTest {
 
     @Test
     public void ensureSweepDoesNotOom() {
-        // repro works with Xmx128M
+        // repro works with Xmx32M
         TableReference bigRows = TableReference.create(Namespace.create("someNamespace"), "someTable");
         createTable(bigRows, SweepStrategy.CONSERVATIVE);
 
@@ -553,7 +553,7 @@ public abstract class AbstractSweeperTest {
     }
 
     private int putLots(TableReference bigRows, String rowStr, long ts) {
-        int cols = 200_000;
+        int cols = 40_000;
         for (int i = 0; i < cols; i++) {
             String column = "col" + i;
             Cell cell = Cell.create(rowStr.getBytes(), column.getBytes());

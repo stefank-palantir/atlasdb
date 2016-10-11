@@ -79,7 +79,7 @@ import com.palantir.common.base.ClosableIterator;
  */
 public class SweepTaskRunnerImpl implements SweepTaskRunner {
     private static final Logger log = LoggerFactory.getLogger(SweepTaskRunnerImpl.class);
-    public static final int CELL_BATCH_SIZE = 1_000_000;
+    public static final int CELL_BATCH_SIZE = 1_000;
 
     private final TransactionManager txManager;
     private final KeyValueService keyValueService;
