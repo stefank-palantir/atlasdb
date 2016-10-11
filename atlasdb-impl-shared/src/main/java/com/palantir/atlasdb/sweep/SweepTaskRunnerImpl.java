@@ -213,10 +213,11 @@ public class SweepTaskRunnerImpl implements SweepTaskRunner {
             Sweeper sweeper,
             long sweepTs,
             PeekingIterator<RowResult<Value>> peekingValues) {
-        currentBatch = removeIgnoredTimestamps(currentBatch, sweeper.getTimestampsToIgnore());
+        List<CellAndTimestamps> currentBatchWithoutIgnoredTimestamps =
+                removeIgnoredTimestamps(currentBatch, sweeper.getTimestampsToIgnore());
 
         CellsAndSentinels cellsAndSentinels = getStartTimestampsPerRowToSweep(
-                currentBatch, peekingValues, sweepTs, sweeper);
+                currentBatchWithoutIgnoredTimestamps, peekingValues, sweepTs, sweeper);
 
         Multimap<Cell, Long> startTimestampsToSweepPerCell = cellsAndSentinels.startTimestampsToSweepPerCell();
         sweepCells(tableRef, startTimestampsToSweepPerCell, cellsAndSentinels.sentinelsToAdd());
@@ -227,10 +228,9 @@ public class SweepTaskRunnerImpl implements SweepTaskRunner {
     @VisibleForTesting
     static List<CellAndTimestamps> removeIgnoredTimestamps(List<CellAndTimestamps> currentBatch,
             Set<Long> timestampsToIgnore) {
-        currentBatch = currentBatch.stream()
+        return currentBatch.stream()
                 .map(item -> CellAndTimestamps.of(item.cell(), Sets.difference(item.timestamps(), timestampsToIgnore)))
                 .collect(Collectors.toList());
-        return currentBatch;
     }
 
     @Override
