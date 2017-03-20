@@ -28,6 +28,7 @@ import javax.annotation.Nullable;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.Marker;
 
 import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
@@ -43,10 +44,7 @@ import com.palantir.leader.NotCurrentLeaderException;
 import com.palantir.remoting1.tracing.Tracers;
 
 public final class AwaitingLeadershipProxy<T> extends AbstractInvocationHandler {
-
-    private static final Logger log = LoggerFactory.getLogger(AwaitingLeadershipProxy.class);
-    private static final Logger leaderLog = LoggerFactory.getLogger("leadership");
-
+    
     public static <U> U newProxyInstance(Class<U> interfaceClass,
                                          Supplier<U> delegateSupplier,
                                          LeaderElectionService leaderElectionService) {
@@ -61,6 +59,9 @@ public final class AwaitingLeadershipProxy<T> extends AbstractInvocationHandler 
                 new Class<?>[] { interfaceClass, Closeable.class },
                 proxy);
     }
+
+    private final TaggedLogger log;
+    private final TaggedLogger leaderLog;
 
     final Supplier<T> delegateSupplier;
     final LeaderElectionService leaderElectionService;
@@ -86,6 +87,10 @@ public final class AwaitingLeadershipProxy<T> extends AbstractInvocationHandler 
         this.delegateRef = new AtomicReference<>();
         this.interfaceClass = interfaceClass;
         this.isClosed = false;
+
+        String logTag = "AwaitingLeadershipProxy:" + interfaceClass.getSimpleName();
+        log = new TaggedLogger(AwaitingLeadershipProxy.class, logTag);
+        leaderLog = new TaggedLogger("leadership", logTag);
     }
 
     private void tryToGainLeadership() {
@@ -205,4 +210,58 @@ public final class AwaitingLeadershipProxy<T> extends AbstractInvocationHandler 
         throw notCurrentLeaderException("method invoked on a non-leader (leadership lost)", cause);
     }
 
+    private static class TaggedLogger {
+        private final Logger delegate;
+        private final String tag;
+
+        public TaggedLogger(Class clazz, String tag) {
+            this.delegate = LoggerFactory.getLogger(clazz);
+            this.tag = "[" + tag + "] ";
+        }
+
+        public TaggedLogger(String name, String tag) {
+            this.delegate = LoggerFactory.getLogger(name);
+            this.tag = "[" + tag + "] ";
+        }
+
+        public void trace(String s, Throwable t) {
+            delegate.trace(tag + s, t);
+        }
+
+        public void debug(String s, Throwable t) {
+            delegate.debug(tag + s, t);
+        }
+
+        public void info(String s, Throwable t) {
+            delegate.info(tag + s, t);
+        }
+
+        public void warn(String s, Throwable t) {
+            delegate.warn(tag + s, t);
+        }
+
+        public void error(String s, Throwable t) {
+            delegate.error(tag + s, t);
+        }
+
+        public void trace(String s, Object... args) {
+            delegate.trace(tag + s, args);
+        }
+
+        public void debug(String s, Object... args) {
+            delegate.debug(tag + s, args);
+        }
+
+        public void info(String s, Object... args) {
+            delegate.info(tag + s, args);
+        }
+
+        public void warn(String s, Object... args) {
+            delegate.warn(tag + s, args);
+        }
+
+        public void error(String s, Object... args) {
+            delegate.error(tag + s, args);
+        }
+    }
 }
